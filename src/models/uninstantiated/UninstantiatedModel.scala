@@ -1,6 +1,6 @@
-package models
+package models.uninstantiated
 
-import misc.UnionFindStorage
+import models.Model
 import vars.domainstorage.DomainStorage
 
 /**
@@ -10,4 +10,3 @@ abstract class UninstantiatedModel extends Model
 {
   override type Implementation = DomainStorage
 }
-

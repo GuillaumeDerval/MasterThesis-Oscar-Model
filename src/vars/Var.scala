@@ -1,6 +1,7 @@
 package vars
 
-import models.{UninstantiatedModel, ModelDeclaration}
+import models.ModelDeclaration
+import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.DomainStorage
 
 /**

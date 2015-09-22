@@ -1,12 +1,13 @@
-package models
+package models.uninstantiated
 
 import misc.UnionFindStorage
+import models.{Model, ModelDeclaration}
 import vars.domainstorage.DomainStorage
 
 /**
  * A model that inherits from another one
  */
-class ChildrenModel(p: UninstantiatedModel) extends UninstantiatedModel
+class ChildModel(p: UninstantiatedModel) extends UninstantiatedModel
 {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration

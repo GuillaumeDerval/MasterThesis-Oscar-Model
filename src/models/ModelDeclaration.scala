@@ -1,5 +1,6 @@
 package models
 
+import models.uninstantiated.BaseModel
 import vars.{IntVarImplem, IntVar}
 import vars.domainstorage.int.IntDomainStorage
 

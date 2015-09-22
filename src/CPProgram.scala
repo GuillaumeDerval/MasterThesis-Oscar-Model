@@ -1,4 +1,7 @@
-import models.{Model, SolutionManager, CPSearch, ModelDeclaration}
+import models._
+import models.instantiated.{InstantiatedModel, InstantiatedCPModel}
+import models.operators.CPInstantiate
+import models.uninstantiated.UninstantiatedModel
 import solvers.CPSolver
 import vars.{IntVarImplem, IntVar}
 import vars.domainstorage.int.IntDomainStorage
@@ -16,10 +19,23 @@ trait CPProgram extends CPSearch {
 
   def solve(): Unit = solve(modelDeclaration.getCurrentModel)
 
+  def solve(model: Model): Unit = {
+    if(model.isInstanceOf[UninstantiatedModel])
+      solve(model.asInstanceOf[UninstantiatedModel])
+    else {
+      assert(model.isInstanceOf[InstantiatedCPModel], "Trying to solve an instanciated model, but not CP compatible, is impossible")
+      solve(model.asInstanceOf[InstantiatedModel])
+    }
+  }
+
+  def solve(model: UninstantiatedModel): Unit = {
+    solve(CPInstantiate(model))
+  }
+
   /**
    * Solve the model, by instantiating it and starting the resolution
    */
-  def solve(model: Model): Unit = {
+  def solve(model: InstantiatedCPModel): Unit = {
     //Create solvers.CPSolver
     val solver = new CPSolver(model)
 
@@ -32,8 +48,6 @@ trait CPProgram extends CPSearch {
     var on_solution = onSolution
     if(on_solution == null && modelDeclaration.isInstanceOf[SolutionManager])
       on_solution = modelDeclaration.asInstanceOf[SolutionManager].onSolution
-
-    //Instantiate all variables
 
     //Start the solver
     modelDeclaration.applyFuncOnModel(model) {

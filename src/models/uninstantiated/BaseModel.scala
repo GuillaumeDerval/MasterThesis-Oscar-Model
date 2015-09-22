@@ -1,6 +1,7 @@
-package models
+package models.uninstantiated
 
 import misc.UnionFindStorage
+import models.{Model, ModelDeclaration}
 import vars.domainstorage.DomainStorage
 
 /**
