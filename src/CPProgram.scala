@@ -12,9 +12,12 @@ import vars.{IntVar, IntVarImplem}
  * search defined inside will be used if none is currently defined. The same goes 
  * for onSolution with SolutionManager/CPSearch
  */
-trait CPProgram extends CPSearch {
+class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch {
   implicit val program = this
-  implicit val modelDeclaration: ModelDeclaration = new ModelDeclaration()
+  implicit val modelDeclaration = md
+
+  def getDeclaredModel = modelDeclaration.getDeclaredModel
+  def getCurrentModel = modelDeclaration.getCurrentModel
 
   def solve(): Unit = solve(modelDeclaration.getCurrentModel)
 

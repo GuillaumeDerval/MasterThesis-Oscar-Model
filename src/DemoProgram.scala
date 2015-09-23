@@ -18,8 +18,7 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
   }
 }
 
-object DemoDistribute extends CPProgram with App {
-  override val modelDeclaration = new DemoDistributedModel()
+object DemoDistribute extends CPProgram(new DemoDistributedModel()) with App {
   solve()
 }
 
