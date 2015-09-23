@@ -10,10 +10,10 @@ object UnionFindStorage {
    * @param to_copy: UnionFindStorage to copy
    * @param convert: Convert function, gives instance of type StoredType for old objects
    */
-  def apply[StoredType,OldType](to_copy: UnionFindStorage[OldType], convert: OldType => StoredType) = {
+  def apply[StoredType, OldType](to_copy: UnionFindStorage[OldType], convert: OldType => StoredType) = {
     val darray = to_copy.array
     val new_array = to_copy.array.map((elem: Elem[OldType]) => {
-      if(elem.isInstanceOf[ElemLink[OldType]])
+      if (elem.isInstanceOf[ElemLink[OldType]])
         new ElemLink[StoredType](elem.pos, darray(elem.pos).get(darray).pos)
       else
         new ElemMain[StoredType](elem.pos, convert(elem.asInstanceOf[ElemMain[OldType]].getContent))

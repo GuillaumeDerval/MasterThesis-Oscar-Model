@@ -1,10 +1,9 @@
 import models._
-import models.instantiated.{InstantiatedModel, InstantiatedCPModel}
+import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
 import solvers.CPSolver
-import vars.{IntVarImplem, IntVar}
-import vars.domainstorage.int.IntDomainStorage
+import vars.{IntVar, IntVarImplem}
 
 /**
  * A program that uses a CP solver, with a single search
@@ -20,11 +19,11 @@ trait CPProgram extends CPSearch {
   def solve(): Unit = solve(modelDeclaration.getCurrentModel)
 
   def solve(model: Model): Unit = {
-    if(model.isInstanceOf[UninstantiatedModel])
+    if (model.isInstanceOf[UninstantiatedModel])
       solve(model.asInstanceOf[UninstantiatedModel])
     else {
       assert(model.isInstanceOf[InstantiatedCPModel], "Trying to solve an instanciated model, but not CP compatible, is impossible")
-      solve(model.asInstanceOf[InstantiatedModel])
+      solve(model.asInstanceOf[InstantiatedCPModel])
     }
   }
 
@@ -41,12 +40,12 @@ trait CPProgram extends CPSearch {
 
     //Get the search
     var search = getSearch
-    if(search == null && modelDeclaration.isInstanceOf[CPSearch])
+    if (search == null && modelDeclaration.isInstanceOf[CPSearch])
       search = modelDeclaration.asInstanceOf[CPSearch].getSearch
 
     //Get onSolution
     var on_solution = onSolution
-    if(on_solution == null && modelDeclaration.isInstanceOf[SolutionManager])
+    if (on_solution == null && modelDeclaration.isInstanceOf[SolutionManager])
       on_solution = modelDeclaration.asInstanceOf[SolutionManager].onSolution
 
     //Start the solver

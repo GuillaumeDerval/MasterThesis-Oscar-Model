@@ -1,8 +1,7 @@
 package models
 
 import models.uninstantiated.BaseModel
-import vars.{IntVarImplem, IntVar}
-import vars.domainstorage.int.IntDomainStorage
+import vars.{IntVar, IntVarImplem}
 
 import scala.util.DynamicVariable
 

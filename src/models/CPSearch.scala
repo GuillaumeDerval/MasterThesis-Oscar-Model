@@ -1,7 +1,5 @@
 package models
 
-import vars.domainstorage.DomainStorage
-
 /**
  * Trait used by classes that provides a search for a solvers.CPSolver
  */

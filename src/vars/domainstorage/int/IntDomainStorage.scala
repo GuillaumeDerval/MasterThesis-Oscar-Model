@@ -5,8 +5,7 @@ import vars.domainstorage.DomainStorage
 
 import scala.collection.mutable
 
-trait IntDomainStorage extends DomainStorage with IntVarImplem
-{
+trait IntDomainStorage extends DomainStorage with IntVarImplem {
   /**
    * Returns a copy of the same type as the current one
    * @return

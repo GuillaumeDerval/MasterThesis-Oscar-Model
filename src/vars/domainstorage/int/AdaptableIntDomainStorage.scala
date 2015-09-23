@@ -9,7 +9,7 @@ import scala.util.Random
  * Note: this class supports IntervalDomainStorage, SetDomainStorage, and SingletonDomainStorage
  * @param content: another domain to proxy
  */
-class AdaptableIntDomainStorage(private var content: IntDomainStorage) extends IntDomainStorage {
+class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomainStorage {
   //Check type
   if (!content.isInstanceOf[IntervalDomainStorage] && !content.isInstanceOf[SetDomainStorage] &&
     !content.isInstanceOf[SingletonDomainStorage])
@@ -87,6 +87,18 @@ class AdaptableIntDomainStorage(private var content: IntDomainStorage) extends I
   }
 
   /**
+   * Tries to simplify the way the data is stored
+   */
+  private def simplify() = {
+    if (content.isInstanceOf[SetDomainStorage]) {
+      if (content.size == 1)
+        content = new SingletonDomainStorage(content.min)
+      else if (content.isContinuous)
+        content = new IntervalDomainStorage(content.min, content.max)
+    }
+  }
+
+  /**
    * Remove val from the domain. If this variable is instantiated, linked propagators are called.
    * @param value
    * @throws EmptyDomainException: if the domain becomes empty
@@ -101,18 +113,6 @@ class AdaptableIntDomainStorage(private var content: IntDomainStorage) extends I
         content.removeValue(value)
     }
     simplify()
-  }
-
-  /**
-   * Tries to simplify the way the data is stored
-   */
-  private def simplify() = {
-    if (content.isInstanceOf[SetDomainStorage]) {
-      if (content.size == 1)
-        content = new SingletonDomainStorage(content.min)
-      else if (content.isContinuous)
-        content = new IntervalDomainStorage(content.min, content.max)
-    }
   }
 
   /**

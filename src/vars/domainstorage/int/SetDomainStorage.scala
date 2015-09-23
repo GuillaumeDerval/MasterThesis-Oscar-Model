@@ -9,7 +9,7 @@ import scala.util.Random
  * Stores a set of int
  * @param content: the domain
  */
-class SetDomainStorage(private var content: mutable.SortedSet[Int]) extends IntDomainStorage {
+class SetDomainStorage(var content: mutable.SortedSet[Int]) extends IntDomainStorage {
   def this(content: Set[Int]) = this(mutable.SortedSet(content.toList: _*))
 
   /**
@@ -66,13 +66,6 @@ class SetDomainStorage(private var content: mutable.SortedSet[Int]) extends IntD
   }
 
   /**
-   * Test if a value is in the domain
-   * @param value: value to test
-   * @return  true if the domain contains the value val, false otherwise
-   */
-  override def hasValue(value: Int): Boolean = content.contains(value)
-
-  /**
    * Remove from the domain all values < val. If this variable is instantiated, linked propagators are called.
    * @param value
    * @throws EmptyDomainException: if the domain becomes empty
@@ -106,6 +99,13 @@ class SetDomainStorage(private var content: mutable.SortedSet[Int]) extends IntD
       throw new EmptyDomainException()
     content -= value
   }
+
+  /**
+   * Test if a value is in the domain
+   * @param value: value to test
+   * @return  true if the domain contains the value val, false otherwise
+   */
+  override def hasValue(value: Int): Boolean = content.contains(value)
 
   /**
    * Returns a copy of the same type as the current one

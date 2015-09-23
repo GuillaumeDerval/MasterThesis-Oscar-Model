@@ -1,8 +1,7 @@
 package models
 
 import misc.UnionFindStorage
-import vars.{VarImplem, Var}
-import vars.domainstorage.DomainStorage
+import vars.{Var, VarImplem}
 
 /**
  * Basic interface for all models
@@ -41,5 +40,5 @@ trait Model {
    * Apply a function on this model
    * @param func
    */
-  def apply(func: => Unit): Unit = declaration.applyFuncOnModel(this, func)
+  def apply(func: => Unit): Unit = declaration.applyFuncOnModel(this)(func)
 }
