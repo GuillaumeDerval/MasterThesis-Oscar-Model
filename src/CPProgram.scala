@@ -22,11 +22,10 @@ class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch 
   def solve(): Unit = solve(modelDeclaration.getCurrentModel)
 
   def solve(model: Model): Unit = {
-    if (model.isInstanceOf[UninstantiatedModel])
-      solve(model.asInstanceOf[UninstantiatedModel])
-    else {
-      assert(model.isInstanceOf[InstantiatedCPModel], "Trying to solve an instanciated model, but not CP compatible, is impossible")
-      solve(model.asInstanceOf[InstantiatedCPModel])
+    model match {
+      case m: UninstantiatedModel => solve(m)
+      case m: InstantiatedCPModel => solve(m)
+      case _ => sys.error("Trying to solve an instanciated model, but not CP compatible, is impossible")
     }
   }
 
