@@ -2,7 +2,7 @@ package models
 
 import constraints.Constraint
 import misc.UnionFindStorage
-import vars.{Var, VarImplem}
+import vars.{IntVar, IntVarImplem, Var, VarImplem}
 
 import scala.collection.mutable
 
@@ -10,28 +10,26 @@ import scala.collection.mutable
  * Basic interface for all models
  */
 trait Model {
-  type Implementation <: VarImplem
+  type IntVarImplementation <: IntVarImplem
   val declaration: ModelDeclaration
   val parent: Option[Model]
-  val domains: UnionFindStorage[Implementation]
+  val intDomains: UnionFindStorage[IntVarImplementation]
 
   val constraints = new mutable.MutableList[Constraint]
 
   /**
    * Add a new variable with a new domain
-   * @param domain
-   * @return
+   * @param domain: an IntVarImplementation
+   * @return the id to the newly created variable
    */
-  def add_new_var(domain: Implementation): Int = {
-    domains.add(domain)
-  }
+  def add_new_var(domain: IntVarImplementation): Int = intDomains.add(domain)
 
   /**
    * Add a new variable, reusing a domain already existing
    * @param reuse
    * @return
    */
-  def add_new_var_reuse(reuse: Var): Int = domains.add(reuse.varid)
+  def add_new_var_reuse(reuse: IntVar): Int = intDomains.add(reuse.varid)
 
 
   /**
@@ -39,7 +37,7 @@ trait Model {
    * @param v
    * @return
    */
-  def get_implementation(v: Var): Implementation = domains.find(v.varid)
+  def get_implementation(v: IntVar): IntVarImplementation = intDomains.find(v.varid)
 
   /**
    * Apply a function on this model

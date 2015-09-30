@@ -4,7 +4,7 @@ import misc.UnionFindStorage
 import models.uninstantiated.UninstantiatedModel
 import models.{Model, ModelDeclaration}
 import vars.domainstorage.DomainStorage
-import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage, SetDomainStorage, SingletonDomainStorage}
+import vars.domainstorage.int._
 
 /**
  * A trait representing all instantiated models
@@ -12,9 +12,9 @@ import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage,
 abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
-  override val domains: UnionFindStorage[Implementation] = UnionFindStorage[Implementation, DomainStorage](p.domains, instantiateDomainStorage)
+  override val intDomains: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intDomains, instantiateDomainStorage)
 
-  protected def instantiateDomainStorage(v: DomainStorage): Implementation = {
+  protected def instantiateDomainStorage(v: DomainStorage): IntVarImplementation = {
     //Cannot do pattern matching here as Implementation is not fully defined
     if (v.isInstanceOf[AdaptableIntDomainStorage])
       instantiateAdaptableIntDomainStorage(v.asInstanceOf[AdaptableIntDomainStorage])
@@ -28,11 +28,11 @@ abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
       sys.error("Unknown DomainStorage type in InstantiatedModel.instantiateDomainStorage")
   }
 
-  protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): Implementation
+  protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): IntVarImplementation
 
-  protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): Implementation
+  protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): IntVarImplementation
 
-  protected def instantiateSetDomainStorage(set: SetDomainStorage): Implementation
+  protected def instantiateSetDomainStorage(set: SetDomainStorage): IntVarImplementation
 
-  protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): Implementation
+  protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): IntVarImplementation
 }

@@ -10,5 +10,5 @@ import vars.domainstorage.DomainStorage
  */
 abstract class Var(val model_decl: ModelDeclaration, domainstorage: DomainStorage) {
   assert(model_decl.getCurrentModel.isInstanceOf[UninstantiatedModel], "New model variables can only be created in uninstantiated models")
-  val varid = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].add_new_var(domainstorage)
+  def varid: Int
 }

@@ -10,21 +10,21 @@ import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage,
  * @param p: the parent Model
  */
 class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
-  override type Implementation = CPVar
+  override type IntVarImplementation = CPIntVar
 
-  override protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): CPVar = {
-    new CPAdaptableIntVar(instantiateDomainStorage(adaptable.content).asInstanceOf[CPIntVar])
+  override protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): CPIntVar = {
+    new CPAdaptableIntVar(instantiateDomainStorage(adaptable.content))
   }
 
-  override protected def instantiateSetDomainStorage(set: SetDomainStorage): CPVar = {
+  override protected def instantiateSetDomainStorage(set: SetDomainStorage): CPIntVar = {
     new CPSetIntVar(set.content.clone())
   }
 
-  override protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): CPVar = {
+  override protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): CPIntVar = {
     new CPSingletonIntVar(singleton.min)
   }
 
-  override protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): CPVar = {
+  override protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): CPIntVar = {
     new CPIntervalIntVar(interval.min, interval.max)
   }
 }

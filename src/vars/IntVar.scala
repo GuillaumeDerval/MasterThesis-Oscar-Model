@@ -2,6 +2,7 @@ package vars
 
 import misc.EmptyDomainException
 import models.ModelDeclaration
+import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.int.IntDomainStorage
 
 import scala.collection.mutable
@@ -12,6 +13,8 @@ import scala.util.Random
  * @param model_decl: the ModelDeclaration associated with this Var
  */
 class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Var(model_decl, storage) with IntVarLike {
+  override val varid = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].add_new_var(storage)
+
   def this(model_decl: ModelDeclaration, min: Int, max: Int) = this(model_decl, IntDomainStorage(min, max))
 
   def this(model_decl: ModelDeclaration, content: Set[Int]) = this(model_decl, IntDomainStorage(content))
@@ -21,6 +24,7 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
   def this(model_decl: ModelDeclaration, value: Int) = this(model_decl, IntDomainStorage(value))
 
   def getImplementation: IntVarImplem = model_decl.getCurrentModel.get_implementation(this).asInstanceOf[IntVarImplem]
+
 
   override def isBound: Boolean = getImplementation.isBound
   override def randomValue(implicit rand: Random): Int = getImplementation.randomValue(rand)
