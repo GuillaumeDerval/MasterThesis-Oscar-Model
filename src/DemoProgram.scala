@@ -8,9 +8,7 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
   x2.updateMax(25)
 
   setSearch {
-    println(x2.max) //il y a ici une conversion implicite de IntVar vers IntVarImpl
-    // qui est/sera un supertype de CPIntVar.
-    // En fonction du thread, la conversion implicite pointe vers un IntDomainStorage different.
+    println(x2.max)
   }
 
   onSolution {

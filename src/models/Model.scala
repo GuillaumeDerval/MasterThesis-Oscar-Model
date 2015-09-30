@@ -1,7 +1,10 @@
 package models
 
+import constraints.Constraint
 import misc.UnionFindStorage
 import vars.{Var, VarImplem}
+
+import scala.collection.mutable
 
 /**
  * Basic interface for all models
@@ -11,6 +14,8 @@ trait Model {
   val declaration: ModelDeclaration
   val parent: Option[Model]
   val domains: UnionFindStorage[Implementation]
+
+  val constraints = new mutable.MutableList[Constraint]
 
   /**
    * Add a new variable with a new domain

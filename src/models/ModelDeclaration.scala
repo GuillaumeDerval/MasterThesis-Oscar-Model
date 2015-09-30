@@ -35,9 +35,4 @@ class ModelDeclaration {
       "of this instance of ModelDeclaration")
     current_model.withValue(model)(func)
   }
-
-  /**
-   * Implicit to get the implementation of an IntVar transparently
-   */
-  implicit def intvar_to_implem(v: IntVar): IntVarImplem = v.getImplementation
 }

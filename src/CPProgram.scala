@@ -56,6 +56,4 @@ class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch 
       search(model)
     }
   }
-
-  implicit def intvar_to_implem(v: IntVar): IntVarImplem = v.getImplementation
 }
