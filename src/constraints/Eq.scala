@@ -12,5 +12,5 @@ class Eq(val x: Int, val y: Int) extends Constraint {
    * @param xv: first variable
    * @param yv: second variable
    */
-  def this(xv: IntVar, yv: IntVar) = this(xv.varid, yv.varid)
+  def this(xv: IntVar, yv: IntVar) = this(xv.viewid, yv.viewid)
 }

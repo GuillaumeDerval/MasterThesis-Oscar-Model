@@ -1,9 +1,12 @@
 package models.instantiated
 
 import models.uninstantiated.UninstantiatedModel
+import vars.IntView
 import vars.cp.CPVar
 import vars.cp.int._
 import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage, SetDomainStorage, SingletonDomainStorage}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * An instantiated model, containing CPVars as implementations

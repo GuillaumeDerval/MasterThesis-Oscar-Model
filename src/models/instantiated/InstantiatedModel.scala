@@ -3,8 +3,11 @@ package models.instantiated
 import misc.UnionFindStorage
 import models.uninstantiated.UninstantiatedModel
 import models.{Model, ModelDeclaration}
+import vars.IntView
 import vars.domainstorage.DomainStorage
 import vars.domainstorage.int._
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * A trait representing all instantiated models
@@ -13,6 +16,9 @@ abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
   override val intDomains: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intDomains, instantiateDomainStorage)
+  override val intViews: ArrayBuffer[IntView] = new ArrayBuffer[IntView](p.intViews.length)
+  for(i: IntView <- p.intViews)
+    intViews += i.copy()
 
   protected def instantiateDomainStorage(v: DomainStorage): IntVarImplementation = {
     //Cannot do pattern matching here as Implementation is not fully defined

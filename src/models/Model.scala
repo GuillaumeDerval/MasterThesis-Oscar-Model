@@ -2,9 +2,10 @@ package models
 
 import constraints.Constraint
 import misc.UnionFindStorage
-import vars.{IntVar, IntVarImplem, Var, VarImplem}
+import vars._
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Basic interface for all models
@@ -14,30 +15,37 @@ trait Model {
   val declaration: ModelDeclaration
   val parent: Option[Model]
   val intDomains: UnionFindStorage[IntVarImplementation]
+  val intViews: ArrayBuffer[IntView]
 
   val constraints = new mutable.MutableList[Constraint]
 
   /**
-   * Add a new variable with a new domain
+   * Add a variable implementation to the UnionFindStorage
    * @param domain: an IntVarImplementation
-   * @return the id to the newly created variable
+   * @return the id to the newly created implementation
    */
-  def add_new_var(domain: IntVarImplementation): Int = intDomains.add(domain)
+  def addNewIntVarImplementation(domain: IntVarImplementation): Int = intDomains.add(domain)
 
   /**
-   * Add a new variable, reusing a domain already existing
-   * @param reuse
+   * Add a variable view to the list of views
+   * @param view: an IntView
+   * @return the id to the newly created view
+   */
+  def addNewIntView(view: IntView): Int = {intViews += view; intViews.length-1}
+
+  /**
+   * Get view of an IntVar
+   * @param v an IntVar
    * @return
    */
-  def add_new_var_reuse(reuse: IntVar): Int = intDomains.add(reuse.varid)
-
+  def getIntView(v: Int): IntView = intViews(v)
 
   /**
    * Get implementation of a Var
-   * @param v
+   * @param v the id to an implementation
    * @return
    */
-  def get_implementation(v: IntVar): IntVarImplementation = intDomains.find(v.varid)
+  def getIntVarImplementation(v: Int): IntVarImplementation = intDomains.find(v)
 
   /**
    * Apply a function on this model
