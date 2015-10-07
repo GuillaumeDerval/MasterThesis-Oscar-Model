@@ -13,7 +13,7 @@ trait Model {
   type IntVarImplementation <: IntVarImplem
   val declaration: ModelDeclaration
   val parent: Option[Model]
-  val intDomains: UnionFindStorage[IntVarImplementation]
+  val intRepresentatives: UnionFindStorage[IntVarImplementation]
 
   val constraints = new mutable.MutableList[Constraint]
 
@@ -22,14 +22,14 @@ trait Model {
    * @param domain: an IntVarImplementation
    * @return the id to the newly created variable
    */
-  def add_new_var(domain: IntVarImplementation): Int = intDomains.add(domain)
+  def addNewRepresentative(domain: IntVarImplementation): Int = intRepresentatives.add(domain)
 
   /**
    * Add a new variable, reusing a domain already existing
    * @param reuse
    * @return
    */
-  def add_new_var_reuse(reuse: IntVar): Int = intDomains.add(reuse.varid)
+  def reuseRepresentative(reuse: IntVar): Int = intRepresentatives.add(reuse.varid)
 
 
   /**
@@ -37,7 +37,7 @@ trait Model {
    * @param v
    * @return
    */
-  def get_implementation(v: IntVar): IntVarImplementation = intDomains.find(v.varid)
+  def getRepresentative(v: IntVar): IntVarImplementation = intRepresentatives.find(v.varid)
 
   /**
    * Apply a function on this model

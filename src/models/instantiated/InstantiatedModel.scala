@@ -12,7 +12,7 @@ import vars.domainstorage.int._
 abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
-  override val intDomains: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intDomains, instantiateDomainStorage)
+  override val intRepresentatives: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
 
   protected def instantiateDomainStorage(v: DomainStorage): IntVarImplementation = {
     //Cannot do pattern matching here as Implementation is not fully defined
