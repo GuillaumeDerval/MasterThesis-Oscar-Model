@@ -12,44 +12,48 @@ import scala.util.Random
  * Represents a variable with Integer domain
  * @param model_decl: the ModelDeclaration associated with this Var
  */
-class IntVar(val viewid: Int, model_decl: ModelDeclaration) extends Var(model_decl) with IntVarLike {
-  def getView: IntView = model_decl.getCurrentModel.getIntView(viewid)
-  override def isBound: Boolean = getView.isBound
-  override def randomValue(implicit rand: Random): Int = getView.randomValue(rand)
-  override def updateMin(value: Int): Unit = getView.updateMin(value)
-  override def max: Int = getView.max
-  override def valueBefore(value: Int): Option[Int] = getView.valueBefore(value)
-  override def min: Int = getView.min
-  override def assign(value: Int): Unit = getView.assign(value)
-  override def valueAfter(value: Int): Option[Int] = getView.valueAfter(value)
-  override def iterator: Iterator[Int] = getView.iterator
-  override def hasValue(value: Int): Boolean = getView.hasValue(value)
-  override def removeValue(value: Int): Unit = getView.removeValue(value)
-  override def updateMax(value: Int): Unit = getView.updateMax(value)
+class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Var(model_decl, storage) with IntVarLike {
+  override val varid = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].add_new_var(storage)
+
+  def this(model_decl: ModelDeclaration, min: Int, max: Int) = this(model_decl, IntDomainStorage(min, max))
+
+  def this(model_decl: ModelDeclaration, content: Set[Int]) = this(model_decl, IntDomainStorage(content))
+
+  def this(model_decl: ModelDeclaration, content: mutable.SortedSet[Int]) = this(model_decl, IntDomainStorage(content))
+
+  def this(model_decl: ModelDeclaration, value: Int) = this(model_decl, IntDomainStorage(value))
+
+  def getImplementation: IntVarImplem = model_decl.getCurrentModel.get_implementation(this).asInstanceOf[IntVarImplem]
+
+
+  override def isBound: Boolean = getImplementation.isBound
+  override def randomValue(implicit rand: Random): Int = getImplementation.randomValue(rand)
+  override def updateMin(value: Int): Unit = getImplementation.updateMin(value)
+  override def max: Int = getImplementation.max
+  override def valueBefore(value: Int): Option[Int] = getImplementation.valueBefore(value)
+  override def min: Int = getImplementation.min
+  override def assign(value: Int): Unit = getImplementation.assign(value)
+  override def valueAfter(value: Int): Option[Int] = getImplementation.valueAfter(value)
+  override def iterator: Iterator[Int] = getImplementation.iterator
+  override def hasValue(value: Int): Boolean = getImplementation.hasValue(value)
+  override def removeValue(value: Int): Unit = getImplementation.removeValue(value)
+  override def updateMax(value: Int): Unit = getImplementation.updateMax(value)
 }
 
 object IntVar {
   def apply(minValue: Int, maxValue: Int)(implicit model_decl: ModelDeclaration) = {
-    init_intvar(IntDomainStorage(minValue, maxValue), model_decl)
+    new IntVar(model_decl, minValue, maxValue)
   }
 
   def apply(content: Set[Int])(implicit model_decl: ModelDeclaration) = {
-    init_intvar(IntDomainStorage(content), model_decl)
+    new IntVar(model_decl, content)
   }
 
   def apply(content: mutable.SortedSet[Int])(implicit model_decl: ModelDeclaration) = {
-    init_intvar(IntDomainStorage(content), model_decl)
+    new IntVar(model_decl, content)
   }
 
   def apply(value: Int)(implicit model_decl: ModelDeclaration) = {
-    init_intvar(IntDomainStorage(value), model_decl)
-  }
-
-  private def init_intvar(storage: IntDomainStorage, model_decl: ModelDeclaration,
-                          multiplier: Int = 1, offset: Int = 0): IntVar = {
-    val implem_id = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].addNewIntVarImplementation(storage)
-    val view = new IntView(model_decl, implem_id, multiplier, offset)
-    val view_id = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].addNewIntView(view)
-    new IntVar(view_id, model_decl)
+    new IntVar(model_decl, value)
   }
 }
