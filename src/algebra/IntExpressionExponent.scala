@@ -8,7 +8,7 @@ import scala.collection.mutable.HashSet
  * @param exponent the exponent
  */
 class IntExpressionExponent(val base: IntExpression, val exponent: IntExpression) extends IntExpression {
-  override def evaluate(): Int = base.evaluate() ^ exponent.evaluate()
+  override def evaluate(): Int = Math.pow(base.evaluate(), exponent.evaluate()).toInt
   override def min: Int = {
     //TODO: we can make it better easily
     iterator.min

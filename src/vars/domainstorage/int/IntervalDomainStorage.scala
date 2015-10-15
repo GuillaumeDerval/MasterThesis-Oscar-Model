@@ -6,8 +6,8 @@ import scala.util.Random
 
 /**
  * Stores a continuous interval
- * @param min_value: the minimum value (in the domain)
- * @param max_value: the maximum value (not in the domain)
+ * @param min_value: the minimum value (inclusive)
+ * @param max_value: the maximum value (inclusive)
  */
 class IntervalDomainStorage(private var min_value: Int, private var max_value: Int) extends IntDomainStorage {
   /**
@@ -37,7 +37,7 @@ class IntervalDomainStorage(private var min_value: Int, private var max_value: I
    */
   override def valueAfter(value: Int): Option[Int] = if (value + 1 <= max_value) Option[Int](value + 1) else None
 
-  override def iterator: Iterator[Int] = Range(min_value, max_value).iterator
+  override def iterator: Iterator[Int] = Range(min_value, max_value+1).iterator
 
   /**
    * Test if a value is in the domain

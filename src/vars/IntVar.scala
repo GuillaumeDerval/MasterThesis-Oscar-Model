@@ -30,7 +30,7 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
   override def removeValue(value: Int): Unit = getRepresentative.removeValue(value)
   override def updateMax(value: Int): Unit = getRepresentative.updateMax(value)
 
-  override def reify(modelDeclaration: ModelDeclaration): IntVar = this
+  override def reify()(implicit modelDeclaration: ModelDeclaration): IntVar = this
   override def evaluate(): Int = if(isBound) max else throw new VariableNotBoundException()
 }
 

@@ -33,7 +33,7 @@ trait BoolExpression extends IntExpression {
    * @throws EmptyDomainException when the new IntVar has an empty domain
    * @return an IntVar
    */
-  override def reify(modelDeclaration: ModelDeclaration): BoolVar = {
+  override def reify()(implicit modelDeclaration: ModelDeclaration): BoolVar = {
     val z = BoolVar(min == 0, max == 1)(modelDeclaration)
     modelDeclaration.post(new BoolExpressionEq(this, z))
     z
