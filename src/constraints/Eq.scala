@@ -1,16 +1,10 @@
 package constraints
-import vars.IntVar
+
+import algebra.IntExpression
 
 /**
  * An equality constraint
- * @param x: first variable id
- * @param y: second variable id
+ * @param x: first expression
+ * @param y: second expression
  */
-class Eq(val x: Int, val y: Int) extends Constraint {
-  /**
-   * An equality constraint (xv == yv)
-   * @param xv: first variable
-   * @param yv: second variable
-   */
-  def this(xv: IntVar, yv: IntVar) = this(xv.varid, yv.varid)
-}
+class Eq(val x: IntExpression, val y: IntExpression) extends Constraint {}

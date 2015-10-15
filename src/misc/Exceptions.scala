@@ -10,3 +10,7 @@ class InvalidCPVarException(msg: String) extends IllegalArgumentException(msg)
 class EmptyDomainException extends Exception("")
 
 class CannotBecomeSparseException extends Exception("")
+
+class VariableNotBoundException extends Exception("")
+
+class InvalidValueException extends Exception("")

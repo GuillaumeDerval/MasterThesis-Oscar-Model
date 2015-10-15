@@ -1,6 +1,7 @@
 package vars
 
-import misc.EmptyDomainException
+import algebra.IntExpression
+import misc.{VariableNotBoundException, EmptyDomainException}
 import models.ModelDeclaration
 import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.int.IntDomainStorage
@@ -12,7 +13,7 @@ import scala.util.Random
  * Represents a variable with Integer domain
  * @param model_decl: the ModelDeclaration associated with this Var
  */
-class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Var(model_decl, storage) with IntVarLike {
+class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Var(model_decl, storage) with IntVarLike with IntExpression {
   override val varid = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].addNewRepresentative(storage)
 
   protected def getRepresentative: IntVarImplem = model_decl.getCurrentModel.getRepresentative(this).asInstanceOf[IntVarImplem]
@@ -28,6 +29,9 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
   override def hasValue(value: Int): Boolean = getRepresentative.hasValue(value)
   override def removeValue(value: Int): Unit = getRepresentative.removeValue(value)
   override def updateMax(value: Int): Unit = getRepresentative.updateMax(value)
+
+  override def reify(modelDeclaration: ModelDeclaration): IntVar = this
+  override def evaluate(): Int = if(isBound) max else throw new VariableNotBoundException()
 }
 
 object IntVar {

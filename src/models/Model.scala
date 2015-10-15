@@ -44,4 +44,10 @@ trait Model {
    * @param func
    */
   def apply(func: => Unit): Unit = declaration.applyFuncOnModel(this)(func)
+
+  /**
+   * Post a new constraint
+   * @param constraint
+   */
+  def post(constraint: Constraint): Unit = constraints += constraint
 }

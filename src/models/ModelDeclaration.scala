@@ -1,5 +1,6 @@
 package models
 
+import constraints.Constraint
 import models.uninstantiated.BaseModel
 import vars.{IntVar, IntVarImplem}
 
@@ -35,4 +36,10 @@ class ModelDeclaration {
       "of this instance of ModelDeclaration")
     current_model.withValue(model)(func)
   }
+
+  /**
+   * Post a new constraint
+   * @param constraint
+   */
+  def post(constraint: Constraint): Unit = current_model.value.post(constraint)
 }
