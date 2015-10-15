@@ -1,6 +1,5 @@
 package algebra
 
-import constraints.IntExpressionEquivalence
 import misc.{EmptyDomainException, VariableNotBoundException}
 import models.ModelDeclaration
 import vars.IntVar
@@ -40,7 +39,7 @@ trait IntExpression extends Iterable[Int] {
    */
   def reify(modelDeclaration: ModelDeclaration): IntVar = {
     val z = IntVar(min, max)(modelDeclaration)
-    modelDeclaration.post(new IntExpressionEquivalence(this, z))
+    modelDeclaration.post(new BoolExpressionEq(this, z))
     z
   }
 }

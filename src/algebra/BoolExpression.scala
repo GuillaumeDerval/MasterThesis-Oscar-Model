@@ -1,7 +1,7 @@
 package algebra
 
-import constraints.IntExpressionEquivalence
-import misc.EmptyDomainException
+import constraints.{ExpressionConstraint, Constraint}
+import misc.{VariableNotBoundException, EmptyDomainException}
 import models.ModelDeclaration
 import vars.BoolVar
 
@@ -20,6 +20,14 @@ trait BoolExpression extends IntExpression {
   def max: Int = 1
 
   /**
+   * Evaluate this expression. All variables referenced have to be bound.
+   * @throws VariableNotBoundException when a variable is not bound
+   * @return the value of this expression
+   */
+  def evaluate(): Int = if(evaluateBool()) 1 else 0
+  def evaluateBool(): Boolean
+
+  /**
    * Give a variable that is equal to this expression. May post appropriate constraints.
    * @param modelDeclaration the ModelDeclaration object in which new variable/constraint will be created
    * @throws EmptyDomainException when the new IntVar has an empty domain
@@ -27,7 +35,21 @@ trait BoolExpression extends IntExpression {
    */
   override def reify(modelDeclaration: ModelDeclaration): BoolVar = {
     val z = BoolVar(min == 0, max == 1)(modelDeclaration)
-    modelDeclaration.post(new IntExpressionEquivalence(this, z))
+    modelDeclaration.post(new BoolExpressionEq(this, z))
     z
   }
+
+  /**
+   * Get an iterator to all the values that this expression can take
+   */
+  override def iterator: Iterator[Int] = Set(0, 1).iterator
+
+  def toConstraint: Constraint = new ExpressionConstraint(this)
+}
+
+object BoolExpression {
+  /**
+   * Convert a BoolExpression to an equivalent constraint
+   */
+  implicit def toConstraint(boolExpression: BoolExpression): Constraint = boolExpression.toConstraint
 }

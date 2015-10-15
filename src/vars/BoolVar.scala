@@ -1,17 +1,28 @@
 package vars
 
-import algebra.BoolExpression
-import constraints.{BoolExpressionFalse, BoolExpressionTrue, Constraint}
+import algebra.{BoolExpressionNot, BoolExpression}
+import constraints.{ExpressionConstraint, Constraint}
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage
 
 class BoolVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends IntVar(model_decl, storage) with BoolVarLike with BoolExpression
 {
-  def constraintTrue(): Constraint = new BoolExpressionTrue(this)
-  def constraintFalse(): Constraint = new BoolExpressionFalse(this)
+  /**
+   * @return a constraint that imposes this variable is true
+   */
+  def constraintTrue(): Constraint = new ExpressionConstraint(this)
 
-  override def max: Int = getRepresentative.max
-  override def min: Int = getRepresentative.min
+  /**
+   * @return a constraint that imposes this variable is false
+   */
+  def constraintFalse(): Constraint = new ExpressionConstraint(new BoolExpressionNot(this))
+
+  // Scala imposes to choose between the implementation in IntVar and the one in BoolExpression;
+  // we choose the one in IntVar
+  override def max: Int = this.asInstanceOf[IntVar].max
+  override def min: Int = this.asInstanceOf[IntVar].min
+  override def evaluate(): Int = this.asInstanceOf[IntVar].evaluate()
+  override def evaluateBool(): Boolean = evaluate() == 1
 }
 
 object BoolVar {
