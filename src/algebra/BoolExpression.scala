@@ -46,9 +46,10 @@ trait BoolExpression extends IntExpression {
   override def iterator: Iterator[Int] = Set(0, 1).iterator
 
   def toConstraint: Constraint = new ExpressionConstraint(this)
-  def ^(b: BoolExpression): BoolExpression = new BoolExpressionXor(this, b)
-  def &(b: BoolExpression): BoolExpression = new BoolExpressionBinaryAnd(this, b)
-  def |(b: BoolExpression): BoolExpression = new BoolExpressionBinaryOr(this, b)
+  def ^(b: BoolExpression): BoolExpression = new Xor(this, b)
+  def &(b: BoolExpression): BoolExpression = new BinaryAnd(this, b)
+  def |(b: BoolExpression): BoolExpression = new BinaryOr(this, b)
+  def ==> (b: BoolExpression): BoolExpression = new Implication(this, b)
 }
 
 object BoolExpression {

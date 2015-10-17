@@ -7,7 +7,7 @@ import scala.collection.mutable.HashSet
  * @param left left-hand of the expression, to which ``right`` will be subtracted
  * @param right right-hand of the expression
  */
-class IntExpressionMinus(val left: IntExpression, val right: IntExpression) extends IntExpression {
+class Minus(val left: IntExpression, val right: IntExpression) extends IntExpression {
   override def evaluate(): Int = left.evaluate() - right.evaluate()
   override def min: Int = left.min - right.max
   override def max: Int = left.max - right.min

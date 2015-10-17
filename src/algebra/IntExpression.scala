@@ -3,7 +3,6 @@ package algebra
 import misc.{EmptyDomainException, VariableNotBoundException}
 import models.ModelDeclaration
 import vars.IntVar
-import vars.cp.int.CPIntVar
 
 /**
  * An expression that represents an Integer
@@ -40,38 +39,38 @@ trait IntExpression extends Iterable[Int] {
    */
   def reify()(implicit modelDeclaration: ModelDeclaration): IntVar = {
     val z = IntVar(min, max)(modelDeclaration)
-    modelDeclaration.post(new BoolExpressionEq(this, z))
+    modelDeclaration.post(new Eq(this, z))
     z
   }
 
-  def + (b: IntExpression): IntExpression = new IntExpressionBinarySum(this, b)
-  def - (b: IntExpression): IntExpression = new IntExpressionMinus(this, b)
-  def * (b: IntExpression): IntExpression = new IntExpressionProd(this, b)
-  def / (b: IntExpression): IntExpression = new IntExpressionDiv(this, b)
-  def % (b: IntExpression): IntExpression = new IntExpressionModulo(this, b)
-  def ~** (b: IntExpression): IntExpression = new IntExpressionExponent(this, b)
-  def ~^ (b: IntExpression): IntExpression = new IntExpressionExponent(this, b)
-  def == (b: IntExpression): BoolExpression = new BoolExpressionEq(this, b)
-  def == (b: Int): BoolExpression = new BoolExpressionEq(this, b)
-  def === (b: IntExpression): BoolExpression = new BoolExpressionEq(this, b)
-  def != (b: IntExpression): BoolExpression = new BoolExpressionNotEq(this, b)
-  def >= (b: IntExpression): BoolExpression = new BoolExpressionGrEq(this, b)
-  def > (b: IntExpression): BoolExpression = new BoolExpressionEq(this, b)
-  def <= (b: IntExpression): BoolExpression = new BoolExpressionLrEq(this, b)
-  def < (b: IntExpression): BoolExpression = new BoolExpressionLr(this, b)
-  def in (b: Set[Int]): BoolExpression = new BoolExpressionInSet(this, b)
-  def unary_- : IntExpression = new IntExpressionUnaryMinus(this)
+  def + (b: IntExpression): IntExpression = new BinarySum(this, b)
+  def - (b: IntExpression): IntExpression = new Minus(this, b)
+  def * (b: IntExpression): IntExpression = new Prod(this, b)
+  def / (b: IntExpression): IntExpression = new Div(this, b)
+  def % (b: IntExpression): IntExpression = new Modulo(this, b)
+  def ~** (b: IntExpression): IntExpression = new Exponent(this, b)
+  def ~^ (b: IntExpression): IntExpression = new Exponent(this, b)
+  def == (b: IntExpression): BoolExpression = new Eq(this, b)
+  def == (b: Int): BoolExpression = new Eq(this, b)
+  def === (b: IntExpression): BoolExpression = new Eq(this, b)
+  def != (b: IntExpression): BoolExpression = new NotEq(this, b)
+  def >= (b: IntExpression): BoolExpression = new GrEq(this, b)
+  def > (b: IntExpression): BoolExpression = new Eq(this, b)
+  def <= (b: IntExpression): BoolExpression = new LrEq(this, b)
+  def < (b: IntExpression): BoolExpression = new Lr(this, b)
+  def in (b: Set[Int]): BoolExpression = new InSet(this, b)
+  def unary_- : IntExpression = new UnaryMinus(this)
   def unary_+ : IntExpression = this
   def unary_! : IntExpression = this != 1
 }
 
 object IntExpression
 {
-  implicit def constant(v: Int): IntExpressionConstant = new IntExpressionConstant(v)
+  implicit def constant(v: Int): Constant = new Constant(v)
   implicit def array_element[A <: IntExpression](v: Array[A]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.asInstanceOf[Array[IntExpression]])
-  implicit def array_element(v: Array[Int]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.map(new IntExpressionConstant(_)))
+  implicit def array_element(v: Array[Int]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.map(new Constant(_)))
 
   class ArrayIntExpressionElementConstraintBuilder(val array: Array[IntExpression]) {
-    def apply(id: IntExpression): IntExpression = new IntExpressionElement(array, id)
+    def apply(id: IntExpression): IntExpression = new Element(array, id)
   }
 }

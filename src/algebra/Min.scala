@@ -5,7 +5,7 @@ import scala.collection.mutable.HashSet
 /**
  * Min of an array
  */
-class IntExpressionMin(val a: Array[IntExpression]) extends IntExpression {
+class Min(val a: Array[IntExpression]) extends IntExpression {
   override def evaluate(): Int = a.foldLeft(Integer.MAX_VALUE)((aa: Int, ba: IntExpression) => aa min ba.evaluate())
   override def min: Int = a.foldLeft(Integer.MAX_VALUE)((aa: Int, ba: IntExpression) => aa min ba.min)
   override def max: Int = a.foldLeft(Integer.MIN_VALUE)((aa: Int, ba: IntExpression) => aa max ba.min)

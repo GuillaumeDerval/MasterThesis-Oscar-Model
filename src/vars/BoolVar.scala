@@ -1,6 +1,6 @@
 package vars
 
-import algebra.{BoolExpressionNot, BoolExpression}
+import algebra.{Not, BoolExpression}
 import constraints.{ExpressionConstraint, Constraint}
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage
@@ -15,7 +15,7 @@ class BoolVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends I
   /**
    * @return a constraint that imposes this variable is false
    */
-  def constraintFalse(): Constraint = new ExpressionConstraint(new BoolExpressionNot(this))
+  def constraintFalse(): Constraint = new ExpressionConstraint(new Not(this))
 
   // Scala imposes to choose between the implementation in IntVar and the one in BoolExpression;
   // we choose the one in IntVar

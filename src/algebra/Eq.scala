@@ -3,13 +3,13 @@ package algebra
 import misc.VariableNotBoundException
 
 /**
- * and_i a_i = output
+ * a == b
  */
-class BoolExpressionAnd(a: Array[BoolExpression]) extends BoolExpression {
+class Eq(a: IntExpression, b: IntExpression) extends BoolExpression {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound
    * @return the value of this expression
    */
-  override def evaluateBool(): Boolean = a.foldLeft(true)((acc, v) => acc && v.evaluateBool())
+  override def evaluateBool(): Boolean = a.evaluate() == b.evaluate()
 }
