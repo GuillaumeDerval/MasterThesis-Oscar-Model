@@ -4,6 +4,7 @@ import constraints.{ExpressionConstraint, Constraint}
 import misc.{VariableNotBoundException, EmptyDomainException}
 import models.ModelDeclaration
 import vars.BoolVar
+import IntExpression._
 
 /**
  * Represents a Boolean expression (an IntExpression that returns a boolean, 0 or 1)
@@ -35,7 +36,7 @@ trait BoolExpression extends IntExpression {
    */
   override def reify()(implicit modelDeclaration: ModelDeclaration): BoolVar = {
     val z = BoolVar(min == 0, max == 1)(modelDeclaration)
-    modelDeclaration.post(new BoolExpressionEq(this, z))
+    modelDeclaration.post(this == z)
     z
   }
 
@@ -45,11 +46,16 @@ trait BoolExpression extends IntExpression {
   override def iterator: Iterator[Int] = Set(0, 1).iterator
 
   def toConstraint: Constraint = new ExpressionConstraint(this)
+  def ^(b: BoolExpression): BoolExpression = new BoolExpressionXor(this, b)
+  def &(b: BoolExpression): BoolExpression = new BoolExpressionBinaryAnd(this, b)
+  def |(b: BoolExpression): BoolExpression = new BoolExpressionBinaryOr(this, b)
 }
 
 object BoolExpression {
   /**
    * Convert a BoolExpression to an equivalent constraint
    */
-  implicit def toConstraint(boolExpression: BoolExpression): Constraint = boolExpression.toConstraint
+  implicit def booltoConstraint(boolExpression: BoolExpression): Constraint = boolExpression.toConstraint
+  implicit def toBoolExpression(intExpression: IntExpression): BoolExpression = intExpression != 0
+  implicit def intToConstraint(intExpression: IntExpression): Constraint = intExpression != 0
 }

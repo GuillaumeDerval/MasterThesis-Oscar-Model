@@ -3,19 +3,11 @@ package algebra
 import scala.collection.mutable.HashSet
 
 /**
- * Expression left+right
- * @param left left-hand of the sum
- * @param right right-hand of the sum
+ * Sum of an array of expression
  */
-class IntExpressionSum(val left: IntExpression, val right: IntExpression) extends IntExpression {
-  override def evaluate(): Int = left.evaluate() + right.evaluate()
-  override def min: Int = left.min + right.min
-  override def max: Int = left.max + right.max
-  override def iterator: Iterator[Int] = {
-    val s = new HashSet[Int]()
-    for(i <- left)
-      for(j <- right)
-        s += i+j
-    s.iterator
-  }
+class IntExpressionSum(val v: Array[IntExpression]) extends IntExpression {
+  override def evaluate(): Int = v.foldLeft(0)((acc: Int, e: IntExpression) => acc + e.evaluate())
+  override def min: Int = v.foldLeft(0)((acc: Int, e: IntExpression) => acc + e.min)
+  override def max: Int = v.foldLeft(0)((acc: Int, e: IntExpression) => acc + e.max)
+  override def iterator: Iterator[Int] = Range(min, max+1).iterator
 }

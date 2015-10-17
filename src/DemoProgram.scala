@@ -1,6 +1,7 @@
 import models.{CPSearch, ModelDeclaration}
 import vars.IntVar
 import algebra.IntExpression._
+import algebra.BoolExpression._
 
 class DemoDistributedModel extends ModelDeclaration with CPSearch {
   val x1 = IntVar(2, 3)
@@ -20,6 +21,9 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
   val c = ((x2 == 25) + 2) ~** xx(x1) - xy(x1) //should be the same a t6
 
   val varFromC = c.reify()
+
+  post(x2 == 25)
+  post(c) //implicit conversion to c != 0
 
   setSearch {
     println("x1 "+x1.min+" "+x1.max)

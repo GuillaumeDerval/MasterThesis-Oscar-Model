@@ -44,7 +44,7 @@ trait IntExpression extends Iterable[Int] {
     z
   }
 
-  def + (b: IntExpression): IntExpression = new IntExpressionSum(this, b)
+  def + (b: IntExpression): IntExpression = new IntExpressionBinarySum(this, b)
   def - (b: IntExpression): IntExpression = new IntExpressionMinus(this, b)
   def * (b: IntExpression): IntExpression = new IntExpressionProd(this, b)
   def / (b: IntExpression): IntExpression = new IntExpressionDiv(this, b)
@@ -69,19 +69,9 @@ object IntExpression
 {
   implicit def constant(v: Int): IntExpressionConstant = new IntExpressionConstant(v)
   implicit def array_element[A <: IntExpression](v: Array[A]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.asInstanceOf[Array[IntExpression]])
-  //implicit def array_element(v: Array[BoolExpression]): ArrayBoolExpressionElementConstraintBuilder = new ArrayBoolExpressionElementConstraintBuilder(v)
-  implicit def array_element(v: Array[Int]): ArrayIntElementConstraintBuilder = new ArrayIntElementConstraintBuilder(v)
-
-
-  class ArrayIntElementConstraintBuilder(val array: Array[Int]) {
-    def apply(id: IntExpression): IntExpression = new IntExpressionElementCst(array, id)
-  }
+  implicit def array_element(v: Array[Int]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.map(new IntExpressionConstant(_)))
 
   class ArrayIntExpressionElementConstraintBuilder(val array: Array[IntExpression]) {
     def apply(id: IntExpression): IntExpression = new IntExpressionElement(array, id)
   }
-
-  //class ArrayBoolExpressionElementConstraintBuilder(val array: Array[BoolExpression]) {
-  //  def apply(id: IntExpression): BoolExpression = new IntExpressionElement(array.asInstanceOf[Array[IntExpression]], id) == 1
-  //}
 }

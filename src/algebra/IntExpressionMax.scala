@@ -3,20 +3,17 @@ package algebra
 import scala.collection.mutable.HashSet
 
 /**
- * Expression max(left, right)
- * @param left first expression
- * @param right second expression
+ * Max of an array
  */
-class IntExpressionMax(val left: IntExpression, val right: IntExpression) extends IntExpression {
-  override def evaluate(): Int = Math.max(left.evaluate(),right.evaluate())
-  override def min: Int = Math.max(left.min, right.min)
-  override def max: Int = Math.max(left.max, right.max)
+class IntExpressionMax(val a: Array[IntExpression]) extends IntExpression {
+  override def evaluate(): Int = a.foldLeft(Integer.MIN_VALUE)((aa: Int, ba: IntExpression) => aa max ba.evaluate())
+  override def min: Int = a.foldLeft(Integer.MAX_VALUE)((aa: Int, ba: IntExpression) => aa min ba.max)
+  override def max: Int = a.foldLeft(Integer.MIN_VALUE)((aa: Int, ba: IntExpression) => aa max ba.max)
   override def iterator: Iterator[Int] = {
     //TODO: we can make it better easily
     val s = new HashSet[Int]()
-    for(i <- left)
-      for(j <- right)
-        s += Math.max(i,j)
+    for(i <- a)
+      s ++= i
     s.iterator
   }
 }
