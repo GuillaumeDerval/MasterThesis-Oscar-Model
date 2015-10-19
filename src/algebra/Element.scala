@@ -7,7 +7,7 @@ import scala.collection.mutable.HashSet
  * @param table The table in which we will retrieve the element ``key``
  * @param key The key to retrieve in ``table``
  */
-class Element(val table: Array[IntExpression], val key: IntExpression) extends IntExpression {
+case class Element(val table: Array[IntExpression], val key: IntExpression) extends IntExpression {
   override def evaluate(): Int = table(key.evaluate()).evaluate()
   override def min: Int = {
     //TODO: we can make it better easily

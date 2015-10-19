@@ -5,7 +5,7 @@ import misc.VariableNotBoundException
 /**
  * a ^ b
  */
-class Xor(a: BoolExpression, b: BoolExpression) extends BoolExpression {
+case class Xor(a: BoolExpression, b: BoolExpression) extends BoolExpression {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound

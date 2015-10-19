@@ -2,7 +2,7 @@ package vars
 
 import algebra.BoolExpression
 import com.sun.org.apache.xpath.internal.operations.Bool
-import constraints.{Eq, Constraint}
+import constraints.Constraint
 import misc.{VariableNotBoundException, EmptyDomainException}
 
 /**

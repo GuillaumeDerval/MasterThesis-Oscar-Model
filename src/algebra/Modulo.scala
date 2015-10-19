@@ -7,7 +7,7 @@ import scala.collection.mutable.HashSet
  * @param left The numerator
  * @param right The denominator
  */
-class Modulo(val left: IntExpression, val right: IntExpression) extends IntExpression {
+case class Modulo(val left: IntExpression, val right: IntExpression) extends IntExpression {
   override def evaluate(): Int = left.evaluate() % right.evaluate()
   override def min: Int = {
     //TODO: we can make it better easily

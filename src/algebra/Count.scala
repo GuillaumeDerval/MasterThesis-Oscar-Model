@@ -5,7 +5,7 @@ package algebra
  * @param X
  * @param Y
  */
-class Count(X: Array[IntExpression], Y: IntExpression) extends IntExpression{
+case class Count(X: Array[IntExpression], Y: IntExpression) extends IntExpression{
   override def evaluate(): Int = {
     val vy = Y.evaluate()
     X.foldLeft(0)((acc, v) => if(v.evaluate() == vy) acc+1 else acc)

@@ -1,7 +1,9 @@
+import constraints.Constraint
 import models.{CPSearch, ModelDeclaration}
 import vars.IntVar
 import algebra.IntExpression._
 import algebra.BoolExpression._
+import visualisation.ConstraintsVisualisation
 
 class DemoDistributedModel extends ModelDeclaration with CPSearch {
   val x1 = IntVar(2, 3)
@@ -36,6 +38,8 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
     println("t6 "+t6.min+" "+t6.max)
     println("c "+c.min+" "+c.max)
     println("varFromC "+varFromC.min+" "+varFromC.max)
+
+    new ConstraintsVisualisation(Array[Constraint](c == 1)).display()
   }
 
   onSolution {}

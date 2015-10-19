@@ -5,7 +5,7 @@ import misc.VariableNotBoundException
 /**
  * a \in b
  */
-class InSet(a: IntExpression, b: Set[Int]) extends BoolExpression {
+case class InSet(a: IntExpression, b: Set[Int]) extends BoolExpression {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound

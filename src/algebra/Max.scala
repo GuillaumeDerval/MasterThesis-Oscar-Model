@@ -5,7 +5,7 @@ import scala.collection.mutable.HashSet
 /**
  * Max of an array
  */
-class Max(val a: Array[IntExpression]) extends IntExpression {
+case class Max(val a: Array[IntExpression]) extends IntExpression {
   override def evaluate(): Int = a.foldLeft(Integer.MIN_VALUE)((aa: Int, ba: IntExpression) => aa max ba.evaluate())
   override def min: Int = a.foldLeft(Integer.MAX_VALUE)((aa: Int, ba: IntExpression) => aa min ba.max)
   override def max: Int = a.foldLeft(Integer.MIN_VALUE)((aa: Int, ba: IntExpression) => aa max ba.max)

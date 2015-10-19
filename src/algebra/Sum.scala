@@ -5,7 +5,7 @@ import scala.collection.mutable.HashSet
 /**
  * Sum of an array of expression
  */
-class Sum(val v: Array[IntExpression]) extends IntExpression {
+case class Sum(val v: Array[IntExpression]) extends IntExpression {
   override def evaluate(): Int = v.foldLeft(0)((acc: Int, e: IntExpression) => acc + e.evaluate())
   override def min: Int = v.foldLeft(0)((acc: Int, e: IntExpression) => acc + e.min)
   override def max: Int = v.foldLeft(0)((acc: Int, e: IntExpression) => acc + e.max)

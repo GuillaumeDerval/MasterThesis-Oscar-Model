@@ -5,7 +5,7 @@ import misc.VariableNotBoundException
 /**
  * and_i a_i = output
  */
-class And(a: Array[BoolExpression]) extends BoolExpression {
+case class And(a: Array[BoolExpression]) extends BoolExpression {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound

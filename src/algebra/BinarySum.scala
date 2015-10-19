@@ -7,7 +7,7 @@ import scala.collection.mutable.HashSet
  * @param left left-hand of the sum
  * @param right right-hand of the sum
  */
-class BinarySum(val left: IntExpression, val right: IntExpression) extends IntExpression {
+case class BinarySum(val left: IntExpression, val right: IntExpression) extends IntExpression {
   override def evaluate(): Int = left.evaluate() + right.evaluate()
   override def min: Int = left.min + right.min
   override def max: Int = left.max + right.max

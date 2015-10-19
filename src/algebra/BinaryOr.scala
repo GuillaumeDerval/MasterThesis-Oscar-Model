@@ -5,7 +5,7 @@ import misc.VariableNotBoundException
 /**
  * a | b (inclusive or)
  */
-class BinaryOr(a: BoolExpression, b: BoolExpression) extends BoolExpression {
+case class BinaryOr(a: BoolExpression, b: BoolExpression) extends BoolExpression {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound
