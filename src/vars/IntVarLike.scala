@@ -163,4 +163,9 @@ trait IntVarLike extends Iterable[Int] {
       removeValue(values(i))
     }
   }
+
+  /**
+   * Return a representative name for this var(-like), if one was given
+   */
+  def getRepresentativeName: Option[String]
 }

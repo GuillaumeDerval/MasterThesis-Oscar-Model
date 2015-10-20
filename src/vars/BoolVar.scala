@@ -26,7 +26,7 @@ class BoolVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends I
 }
 
 object BoolVar {
-  def apply(containsFalse: Boolean, containsTrue: Boolean)(implicit model_decl: ModelDeclaration) = {
-    new BoolVar(model_decl, IntDomainStorage(if (containsFalse) 0 else 1, if (containsFalse) 1 else 0))
+  def apply(containsFalse: Boolean, containsTrue: Boolean, name: Option[String] = None)(implicit model_decl: ModelDeclaration) = {
+    new BoolVar(model_decl, IntDomainStorage(if (containsFalse) 0 else 1, if (containsFalse) 1 else 0, name))
   }
 }

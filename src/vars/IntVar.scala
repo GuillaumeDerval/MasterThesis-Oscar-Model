@@ -29,6 +29,7 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
   override def hasValue(value: Int): Boolean = getRepresentative.hasValue(value)
   override def removeValue(value: Int): Unit = getRepresentative.removeValue(value)
   override def updateMax(value: Int): Unit = getRepresentative.updateMax(value)
+  override def getRepresentativeName: Option[String] = getRepresentative.getRepresentativeName
 
   override def reify()(implicit modelDeclaration: ModelDeclaration): IntVar = this
   override def evaluate(): Int = if(isBound) max else throw new VariableNotBoundException()
@@ -49,5 +50,21 @@ object IntVar {
 
   def apply(value: Int)(implicit model_decl: ModelDeclaration) = {
     new IntVar(model_decl, IntDomainStorage(value))
+  }
+
+  def apply(minValue: Int, maxValue: Int, name: Option[String])(implicit model_decl: ModelDeclaration) = {
+    new IntVar(model_decl, IntDomainStorage(minValue, maxValue, name))
+  }
+
+  def apply(content: Set[Int], name: Option[String])(implicit model_decl: ModelDeclaration) = {
+    new IntVar(model_decl, IntDomainStorage(content, name))
+  }
+
+  def apply(content: mutable.SortedSet[Int], name: Option[String])(implicit model_decl: ModelDeclaration) = {
+    new IntVar(model_decl, IntDomainStorage(content, name))
+  }
+
+  def apply(value: Int, name: Option[String])(implicit model_decl: ModelDeclaration) = {
+    new IntVar(model_decl, IntDomainStorage(value, name))
   }
 }

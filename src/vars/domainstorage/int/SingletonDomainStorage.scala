@@ -8,7 +8,7 @@ import scala.util.Random
  * A domain that stores a single integer
  * @param single_value
  */
-class SingletonDomainStorage(single_value: Int) extends IntDomainStorage {
+class SingletonDomainStorage(single_value: Int, private val repr_name: Option[String] = None) extends IntDomainStorage {
   /**
    * @return true if the domain of the variable has exactly one value, false if the domain has more than one value
    */
@@ -82,5 +82,10 @@ class SingletonDomainStorage(single_value: Int) extends IntDomainStorage {
    * Returns a copy of the same type as the current one
    * @return
    */
-  override def copy(): SingletonDomainStorage = new SingletonDomainStorage(single_value)
+  override def copy(): SingletonDomainStorage = new SingletonDomainStorage(single_value, getRepresentativeName)
+
+  /**
+   * Return a representative name for this var(-like), if one was given
+   */
+  override def getRepresentativeName: Option[String] = repr_name
 }

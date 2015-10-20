@@ -9,7 +9,8 @@ import scala.util.Random
  * Stores a set of int
  * @param content: the domain
  */
-class SetDomainStorage(var content: mutable.SortedSet[Int]) extends IntDomainStorage {
+class SetDomainStorage(var content: mutable.SortedSet[Int], private val repr_name: Option[String] = None) extends IntDomainStorage {
+  def this(content: Set[Int], repr_name: Option[String]) = this(mutable.SortedSet(content.toList: _*), repr_name)
   def this(content: Set[Int]) = this(mutable.SortedSet(content.toList: _*))
 
   /**
@@ -111,5 +112,10 @@ class SetDomainStorage(var content: mutable.SortedSet[Int]) extends IntDomainSto
    * Returns a copy of the same type as the current one
    * @return
    */
-  override def copy(): SetDomainStorage = new SetDomainStorage(content.clone())
+  override def copy(): SetDomainStorage = new SetDomainStorage(content.clone(), getRepresentativeName)
+
+  /**
+   * Return a representative name for this var(-like), if one was given
+   */
+  override def getRepresentativeName: Option[String] = repr_name
 }

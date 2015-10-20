@@ -62,7 +62,7 @@ class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomain
    * @throws EmptyDomainException: if the initial do not contain val
    */
   override def assign(value: Int): Unit = {
-    if (content.hasValue(value)) content = new SingletonDomainStorage(value)
+    if (content.hasValue(value)) content = new SingletonDomainStorage(value, getRepresentativeName)
     else throw new EmptyDomainException()
   }
 
@@ -92,9 +92,9 @@ class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomain
   private def simplify() = {
     if (content.isInstanceOf[SetDomainStorage]) {
       if (content.size == 1)
-        content = new SingletonDomainStorage(content.min)
+        content = new SingletonDomainStorage(content.min, getRepresentativeName)
       else if (content.isContinuous)
-        content = new IntervalDomainStorage(content.min, content.max)
+        content = new IntervalDomainStorage(content.min, content.max, getRepresentativeName)
     }
   }
 
@@ -109,7 +109,7 @@ class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomain
     }
     catch {
       case e: CannotBecomeSparseException =>
-        content = new SetDomainStorage(content.toSet)
+        content = new SetDomainStorage(content.toSet, getRepresentativeName)
         content.removeValue(value)
     }
     simplify()
@@ -119,4 +119,9 @@ class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomain
    * Returns a copy of the same type as the current one
    */
   override def copy(): AdaptableIntDomainStorage = new AdaptableIntDomainStorage(content.copy())
+
+  /**
+   * Return a representative name for this var(-like), if one was given
+   */
+  override def getRepresentativeName: Option[String] = content.getRepresentativeName
 }
