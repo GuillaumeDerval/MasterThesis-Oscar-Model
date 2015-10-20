@@ -17,14 +17,14 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
   }
 
   override protected def instantiateSetDomainStorage(set: SetDomainStorage): CPIntVar = {
-    new CPSetIntVar(set.content.clone())
+    new CPSetIntVar(set.content.clone(), set.getRepresentativeName)
   }
 
   override protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): CPIntVar = {
-    new CPSingletonIntVar(singleton.min)
+    new CPSingletonIntVar(singleton.min, singleton.getRepresentativeName)
   }
 
   override protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): CPIntVar = {
-    new CPIntervalIntVar(interval.min, interval.max)
+    new CPIntervalIntVar(interval.min, interval.max, interval.getRepresentativeName)
   }
 }
