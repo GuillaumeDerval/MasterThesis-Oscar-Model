@@ -1,17 +1,13 @@
 package visualisation
 
-import java.io.IOException
-import java.util
-import java.util.{Comparator, Collections, Arrays}
+import org.graphstream.ui.view.{Viewer, ViewerListener}
+
+import scala.collection.JavaConversions._
 
 import algebra._
 import constraints.{ExpressionConstraint, Constraint}
-import org.graphstream.algorithm.{Prim, SpanningTree}
-import org.graphstream.graph.{Graph, Node, Edge}
-import org.graphstream.graph.implementations.{AdjacencyListGraph, SingleGraph}
-import org.graphstream.stream.PipeBase
-import org.graphstream.ui.geom.Point3
-import org.graphstream.ui.layout.{HierarchicalLayout, Layout}
+import org.graphstream.graph.{Node, Edge}
+import org.graphstream.graph.implementations.SingleGraph
 import vars.{BoolVar, IntVar}
 import visualisation.Color.Color
 
@@ -22,7 +18,7 @@ object Color extends Enumeration {
 
 class ConstraintsVisualisation(constraints: Array[Constraint]) {
   System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
-  val graph = new SingleGraph("Tutorial 1")
+  val graph = new SingleGraph("Constraint view")
   var nextidx: Int = 0
 
   graph.setAttribute("ui.stylesheet",
@@ -57,10 +53,10 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
 
   def display(): Unit = {
     val viewer = graph.display(false)
-    //viewer.disableAutoLayout()
-    val layout = new CustomHierarchicalLayout
-    layout.setRoots(roots(0))
+    val layout = new ForestLayout
     viewer.enableAutoLayout(layout)
+    layout.setRoots(roots.toList)
+    new TerminalNodeDisplay(viewer).pump()
   }
 
   private def parseConstraint(const: Constraint): String = {
@@ -79,9 +75,9 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
     expr match {
       //std expressions
       case And(array) => basicCreate(expr, "And", array, "&&")
-      case BinaryAnd(a, b) => basicCreate(expr, "And\n(Binary)", Seq(a,b), "&&")
-      case BinaryOr(a, b) => basicCreate(expr, "Or\n(Binary)", Seq(a,b), "||")
-      case BinarySum(a, b) => basicCreate(expr, "Sum\n(Binary)", Seq(a,b), "+")
+      case BinaryAnd(a, b) => basicCreate(expr, "And (Binary)", Seq(a,b), "&&")
+      case BinaryOr(a, b) => basicCreate(expr, "Or (Binary)", Seq(a,b), "||")
+      case BinarySum(a, b) => basicCreate(expr, "Sum (Binary)", Seq(a,b), "+")
       case Div(x, y) => basicCreate(expr, "Divide", Seq(x,y), "/")
       case Eq(a, b) => basicCreate(expr, "Equality", Seq(a,b), "=")
       case Exponent(x, y) => basicCreate(expr, "Exponent", Seq(x,y), "**")
@@ -103,9 +99,9 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
       case Xor(a, b) => basicCreate(expr, "Xor", Seq(a,b), "^")
 
       //terminal expressions
-      case Constant(a) => terminalNodeCreate(expr, "Constant", a.toString)
-      case i: BoolVar => terminalNodeCreate(expr, "BoolVar", i.toArray.toString)
-      case i: IntVar => terminalNodeCreate(expr, "IntVar", i.toArray.toString)
+      case Constant(a) => terminalNodeCreate(expr, "Constant ("+a.toString+")")
+      case i: BoolVar => terminalNodeCreate(expr, "BoolVar")
+      case i: IntVar => terminalNodeCreate(expr, "IntVar")
 
       //More complicated expressions
       case Count(array, value) =>
@@ -131,12 +127,14 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
 
   private def basicCreate(expr: IntExpression, name: String, children: Seq[IntExpression], between: Seq[String]): String = nodeCreate(expr, name, children.map(a => (parseExpression(a), "", Color.DEFAULT)), between, Color.DEFAULT)
   private def basicCreate(expr: IntExpression, name: String, children: Seq[IntExpression], between: String): String = basicCreate(expr, name, children, Array.tabulate(children.size-1)(_ => between))
-  private def terminalNodeCreate(expr: IntExpression, name: String, value: String): String = nodeCreate(expr, name, Seq(), Seq(), Color.SPECIAL)
+  private def terminalNodeCreate(expr: IntExpression, name: String): String = nodeCreate(expr, name, Seq(), Seq(), Color.SPECIAL)
+
   private def nodeCreate(expr: IntExpression, name: String, children: Seq[(String, String, Color)], between: Seq[String], color: Color): String = {
     val idx = nextidx.toString
     nextidx += 1
     val node: Node = graph.addNode(idx)
     node.addAttribute("ui.label", name)
+    node.addAttribute("expression", expr)
 
     color match {
       case Color.DEFAULT => {}//do nothing
@@ -153,6 +151,37 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
       }
     }
     idx
+  }
+
+  class TerminalNodeDisplay(viewer: Viewer) extends ViewerListener {
+    var stop = false
+    val pipe = viewer.newViewerPipe()
+    pipe.addViewerListener(this)
+    pipe.addSink(graph)
+
+    def pump() { while(!stop) pipe.blockingPump() }
+    override def buttonReleased(id: String): Unit = {
+      val n:Node = graph.getNode(id)
+      val expr: IntExpression= n.getAttribute("expression")
+
+      expr match {
+        case a: BoolVar =>
+          println("Var id: "+a.varid)
+          println("\tBoolean value: "+a.iterator.mkString(","))
+        case a: IntVar =>
+          println("Var id: "+a.varid)
+          println("\tInteger value: "+a.iterator.mkString(","))
+        case Constant(a) =>
+          println("Constant value: "+a.toString)
+        case default => {}
+      }
+    }
+
+    override def buttonPushed(id: String): Unit = {}
+
+    override def viewClosed(viewName: String): Unit = {
+      stop = true
+    }
   }
 }
 
