@@ -1,12 +1,13 @@
 package visualisation
 
+import org.graphstream.ui.view.Viewer.CloseFramePolicy
 import org.graphstream.ui.view.{Viewer, ViewerListener}
 
 import scala.collection.JavaConversions._
 
 import algebra._
 import constraints.{ExpressionConstraint, Constraint}
-import org.graphstream.graph.{Node, Edge}
+import org.graphstream.graph.{Graph, Node, Edge}
 import org.graphstream.graph.implementations.SingleGraph
 import vars.{BoolVar, IntVar}
 import visualisation.Color.Color
@@ -16,9 +17,9 @@ object Color extends Enumeration {
   val DEFAULT, SPECIAL = Value
 }
 
-class ConstraintsVisualisation(constraints: Array[Constraint]) {
+class ConstraintsVisualisation(constraints: Array[Constraint], name: String) {
   System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
-  val graph = new SingleGraph("Constraint view")
+  val graph = new SingleGraph("Constraint view: " + name)
   var nextidx: Int = 0
 
   graph.setAttribute("ui.stylesheet",
@@ -56,7 +57,11 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
     val layout = new ForestLayout
     viewer.enableAutoLayout(layout)
     layout.setRoots(roots.toList)
-    new TerminalNodeDisplay(viewer).pump()
+    new Thread(new Runnable {
+      def run() {
+        new TerminalNodeDisplay(viewer, graph).pump()
+      }
+    }).start()
   }
 
   private def parseConstraint(const: Constraint): String = {
@@ -152,38 +157,38 @@ class ConstraintsVisualisation(constraints: Array[Constraint]) {
     }
     idx
   }
+}
 
-  class TerminalNodeDisplay(viewer: Viewer) extends ViewerListener {
-    var stop = false
-    val pipe = viewer.newViewerPipe()
-    pipe.addViewerListener(this)
-    pipe.addSink(graph)
+class TerminalNodeDisplay(viewer: Viewer, graph: Graph) extends ViewerListener {
+  var stop = false
+  val pipe = viewer.newViewerPipe()
+  pipe.addViewerListener(this)
+  pipe.addSink(graph)
 
-    def pump() { while(!stop) pipe.blockingPump() }
-    override def buttonReleased(id: String): Unit = {
-      val n:Node = graph.getNode(id)
-      val expr: IntExpression= n.getAttribute("expression")
+  def pump() { while(!stop) pipe.blockingPump() }
+  override def buttonReleased(id: String): Unit = {
+    val n:Node = graph.getNode(id)
+    val expr: IntExpression= n.getAttribute("expression")
 
-      expr match {
-        case a: BoolVar =>
-          println("Var id: "+a.varid)
-          a.getRepresentativeName.map(name => println("\tVar name: "+name))
-          println("\tBoolean value: "+a.iterator.mkString(","))
-        case a: IntVar =>
-          println("Var id: "+a.varid)
-          a.getRepresentativeName.map(name => println("\tVar name: "+name))
-          println("\tInteger value: "+a.iterator.mkString(","))
-        case Constant(a) =>
-          println("Constant value: "+a.toString)
-        case default => {}
-      }
+    expr match {
+      case a: BoolVar =>
+        println("Var id: "+a.varid)
+        a.getRepresentativeName.map(name => println("\tVar name: "+name))
+        println("\tBoolean value: "+a.iterator.mkString(","))
+      case a: IntVar =>
+        println("Var id: "+a.varid)
+        a.getRepresentativeName.map(name => println("\tVar name: "+name))
+        println("\tInteger value: "+a.iterator.mkString(","))
+      case Constant(a) =>
+        println("Constant value: "+a.toString)
+      case default => {}
     }
+  }
 
-    override def buttonPushed(id: String): Unit = {}
+  override def buttonPushed(id: String): Unit = {}
 
-    override def viewClosed(viewName: String): Unit = {
-      stop = true
-    }
+  override def viewClosed(viewName: String): Unit = {
+    stop = true
   }
 }
 

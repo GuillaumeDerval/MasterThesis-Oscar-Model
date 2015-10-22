@@ -21,8 +21,8 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
     m*1000 + o*100 + r*10 + e ==
     m*10000 + o*1000 + n*100 + e*10 + y
 
-  new ConstraintsVisualisation(Array[Constraint](c)).display()
-  new ConstraintsVisualisation(Array[Constraint](SimplifySum(c))).display()
+  new ConstraintsVisualisation(Array[Constraint](c), "without simplification").display()
+  new ConstraintsVisualisation(Array[Constraint](SimplifySum(c)), "simplified").display()
 
   setSearch {}
   onSolution {}
