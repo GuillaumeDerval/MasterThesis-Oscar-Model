@@ -12,4 +12,15 @@ case class Or(a: Array[BoolExpression]) extends BoolExpression {
    * @return the value of this expression
    */
   override def evaluateBool(): Boolean = a.foldLeft(false)((acc, e) => acc || e.evaluateBool())
+
+  /**
+   * Returns an iterable that contains all sub-expressions of this expression
+   */
+  override def subexpressions(): Iterable[IntExpression] = a
+
+  /**
+   * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+   * This function should return a value that is of the class as the object that was given to it.
+   */
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = new Or(a.map(func(_).asInstanceOf[BoolExpression]))
 }

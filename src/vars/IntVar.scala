@@ -33,6 +33,10 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
 
   override def reify()(implicit modelDeclaration: ModelDeclaration): IntVar = this
   override def evaluate(): Int = if(isBound) max else throw new VariableNotBoundException()
+  override def values(): Iterable[Int] = this
+
+  override def subexpressions(): Iterable[IntExpression] = Array[IntExpression]()
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = this
 }
 
 object IntVar {

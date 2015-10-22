@@ -12,5 +12,16 @@ case class Count(X: Array[IntExpression], Y: IntExpression) extends IntExpressio
   }
   override def max: Int = X.length
   override def min: Int = 0
-  override def iterator: Iterator[Int] = Range(min, max+1).iterator
+  override def values(): Iterable[Int] = Range(min, max+1)
+
+  /**
+   * Returns an iterable that contains all sub-expressions of this expression
+   */
+  override def subexpressions(): Iterable[IntExpression] = X ++ Array(Y)
+
+  /**
+   * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+   * This function should return a value that is of the class as the object that was given to it.
+   */
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = new Count(X.map(func), func(Y))
 }

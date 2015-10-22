@@ -43,7 +43,7 @@ trait BoolExpression extends IntExpression {
   /**
    * Get an iterator to all the values that this expression can take
    */
-  override def iterator: Iterator[Int] = Set(0, 1).iterator
+  override def values(): Iterable[Int] = Set(0, 1)
 
   def toConstraint: Constraint = new ExpressionConstraint(this)
   def ^(b: BoolExpression): BoolExpression = new Xor(this, b)

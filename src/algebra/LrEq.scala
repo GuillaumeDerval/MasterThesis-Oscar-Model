@@ -12,4 +12,15 @@ case class LrEq(a: IntExpression, b: IntExpression) extends BoolExpression {
    * @return the value of this expression
    */
   override def evaluateBool(): Boolean = a.evaluate() <= b.evaluate()
+
+  /**
+   * Returns an iterable that contains all sub-expressions of this expression
+   */
+  override def subexpressions(): Iterable[IntExpression] = Array(a,b)
+
+  /**
+   * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+   * This function should return a value that is of the class as the object that was given to it.
+   */
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = new LrEq(func(a), func(b))
 }

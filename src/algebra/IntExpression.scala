@@ -7,7 +7,7 @@ import vars.IntVar
 /**
  * An expression that represents an Integer
  */
-trait IntExpression extends Iterable[Int] {
+trait IntExpression {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound
@@ -26,10 +26,20 @@ trait IntExpression extends Iterable[Int] {
   def max: Int
 
   /**
-   * Get an iterator to all the values that this expression can take
+   * Returns an iterable that contains a superset of the values this expression can have
    */
-  def iterator: Iterator[Int]
-  override def foreach[@specialized(Int) U](f: Int => U): Unit = iterator.foreach(f)
+  def values(): Iterable[Int]
+
+  /**
+   * Returns an iterable that contains all sub-expressions of this expression
+   */
+  def subexpressions(): Iterable[IntExpression]
+
+  /**
+   * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+   * This function should return a value that is of the class as the object that was given to it.
+   */
+  def mapSubexpressions(func: (IntExpression => IntExpression)): IntExpression
 
   /**
    * Give a variable that is equal to this expression. May post appropriate constraints.

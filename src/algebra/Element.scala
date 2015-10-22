@@ -11,16 +11,27 @@ case class Element(val table: Array[IntExpression], val key: IntExpression) exte
   override def evaluate(): Int = table(key.evaluate()).evaluate()
   override def min: Int = {
     //TODO: we can make it better easily
-    iterator.min
+    values.min
   }
   override def max: Int = {
     //TODO: we can make it better easily
-    iterator.max
+    values.max
   }
-  override def iterator: Iterator[Int] = {
+  override def values(): Iterable[Int] = {
     val s = new HashSet[Int]()
-    for(i <- key)
-      s ++= table(i)
-    s.iterator
+    for(i <- key.values)
+      s ++= table(i).values
+    s
   }
+
+  /**
+   * Returns an iterable that contains all sub-expressions of this expression
+   */
+  override def subexpressions(): Iterable[IntExpression] = table ++ Array(key)
+
+  /**
+   * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+   * This function should return a value that is of the class as the object that was given to it.
+   */
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = new Element(table.map(func), func(key))
 }

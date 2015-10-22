@@ -12,4 +12,17 @@ case class Implication(a: BoolExpression, b: BoolExpression) extends BoolExpress
    * @return the value of this expression
    */
   override def evaluateBool(): Boolean = !a.evaluateBool() || b.evaluateBool()
+
+  /**
+   * Returns an iterable that contains all sub-expressions of this expression
+   */
+  override def subexpressions(): Iterable[IntExpression] = Array(a,b)
+
+  /**
+   * Apply a function on all sub-expressions of this expression and returns a new expression of the same type.
+   * This function should return a value that is of the class as the object that was given to it.
+   */
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = {
+    new Implication(func(a).asInstanceOf[BoolExpression], func(b).asInstanceOf[BoolExpression])
+  }
 }

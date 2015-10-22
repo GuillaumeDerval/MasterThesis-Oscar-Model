@@ -1,6 +1,6 @@
 package vars
 
-import algebra.{Not, BoolExpression}
+import algebra.{IntExpression, Not, BoolExpression}
 import constraints.{ExpressionConstraint, Constraint}
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage
@@ -23,6 +23,9 @@ class BoolVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends I
   override def min: Int = this.asInstanceOf[IntVar].min
   override def evaluate(): Int = this.asInstanceOf[IntVar].evaluate()
   override def evaluateBool(): Boolean = evaluate() == 1
+
+  override def subexpressions(): Iterable[IntExpression] = Array[IntExpression]()
+  override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = this
 }
 
 object BoolVar {
