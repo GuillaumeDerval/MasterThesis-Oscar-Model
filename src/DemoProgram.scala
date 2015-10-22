@@ -1,4 +1,5 @@
 import constraints.Constraint
+import models.operators.SimplifySum
 import models.{CPSearch, ModelDeclaration}
 import vars.IntVar
 import algebra.IntExpression._
@@ -19,13 +20,11 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
   val c = s*1000 + e*100 + n*10 + d +
     m*1000 + o*100 + r*10 + e ==
     m*10000 + o*1000 + n*100 + e*10 + y
-  post(c)
-  //add(allDifferent(all), Strong)
 
-  setSearch {
-    new ConstraintsVisualisation(Array[Constraint](c)).display()
-  }
+  new ConstraintsVisualisation(Array[Constraint](c)).display()
+  new ConstraintsVisualisation(Array[Constraint](SimplifySum(c))).display()
 
+  setSearch {}
   onSolution {}
 }
 

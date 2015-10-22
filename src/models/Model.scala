@@ -1,21 +1,20 @@
 package models
 
-import constraints.Constraint
+import constraints.{ConstraintPower, Constraint}
+import constraints.ConstraintPower.ConstraintPower
 import misc.UnionFindStorage
 import vars.{IntVar, IntVarImplem, Var, VarImplem}
 
 import scala.collection.mutable
 
 /**
- * Basic interface for all models
+ * Basic trait for all models
  */
 trait Model {
   type IntVarImplementation <: IntVarImplem
   val declaration: ModelDeclaration
   val parent: Option[Model]
   val intRepresentatives: UnionFindStorage[IntVarImplementation]
-
-  val constraints = new mutable.MutableList[Constraint]
 
   /**
    * Add a new variable with a new domain
@@ -49,5 +48,5 @@ trait Model {
    * Post a new constraint
    * @param constraint
    */
-  def post(constraint: Constraint): Unit = constraints += constraint
+  def post(constraint: Constraint): Unit
 }
