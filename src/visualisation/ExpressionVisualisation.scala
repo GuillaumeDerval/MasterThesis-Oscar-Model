@@ -164,6 +164,7 @@ class TerminalNodeDisplay(viewer: Viewer, graph: Graph) extends ViewerListener {
   val pipe = viewer.newViewerPipe()
   pipe.addViewerListener(this)
   pipe.addSink(graph)
+  pipe.removeElementSink(graph);
 
   def pump() { while(!stop) pipe.blockingPump() }
   override def buttonReleased(id: String): Unit = {
