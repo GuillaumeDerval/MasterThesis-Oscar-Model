@@ -57,7 +57,7 @@ trait IntExpression {
   def - (b: IntExpression): IntExpression = new Minus(this, b)
   def * (b: IntExpression): IntExpression = new Prod(this, b)
   def / (b: IntExpression): IntExpression = new Div(this, b)
-  def % (b: IntExpression): IntExpression = new Modulo(this, b)
+  def % (b: Int): IntExpression = new Modulo(this, b)
   def ~** (b: IntExpression): IntExpression = new Exponent(this, b)
   def ~^ (b: IntExpression): IntExpression = new Exponent(this, b)
   def == (b: IntExpression): BoolExpression = new Eq(this, b)
