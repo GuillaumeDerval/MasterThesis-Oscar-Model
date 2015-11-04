@@ -14,6 +14,9 @@ abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
   override val declaration: ModelDeclaration = p.declaration
   override val intRepresentatives: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
 
+  for(c <- p.constraints)
+    post(c)
+
   protected def instantiateDomainStorage(v: DomainStorage): IntVarImplementation = {
     //Cannot do pattern matching here as Implementation is not fully defined
     if (v.isInstanceOf[AdaptableIntDomainStorage])

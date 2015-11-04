@@ -2,23 +2,17 @@ package vars.cp.int
 
 import misc.EmptyDomainException
 import oscar.cp.core.CPOutcome
-import vars.IntVarImplem
+import vars.{BoolVarImplem, IntVarImplem}
 import vars.cp.CPVar
 import vars.domainstorage.int._
+
 import scala.util.Random
 
-class CPIntVar(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extends CPVar with IntVarImplem
-{
-  val realCPVar = {
-    notInstantied match {
-      case a: AdaptableIntDomainStorage => a
-      case default => notInstantied
-    }
-  } match {
-    case a: IntervalDomainStorage => oscar.cp.CPIntVar(a.min, a.max)(store)
-    case b: SetDomainStorage => oscar.cp.CPIntVar(b.content)(store)
-    case c: SingletonDomainStorage => oscar.cp.CPIntVar(c.max)(store)
-  }
+/**
+  * Created by dervalguillaume on 3/11/15.
+  */
+class CPBoolVar(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extends CPVar with BoolVarImplem {
+  val realCPVar = if(notInstantied.isBound) oscar.cp.CPBoolVar(notInstantied.min == 1)(store) else oscar.cp.CPBoolVar()(store)
 
   /**
     * @return true if the domain of the variable has exactly one value, false if the domain has more than one value

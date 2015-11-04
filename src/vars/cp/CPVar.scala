@@ -5,6 +5,4 @@ import vars.VarImplem
 /**
  * An instantiated CP variable
  */
-trait CPVar extends VarImplem {
-  def print: String
-}
+trait CPVar extends VarImplem {}
