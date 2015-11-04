@@ -1,7 +1,7 @@
 package models.instantiated
 
 import algebra._
-import constraints.{ExpressionConstraint, Constraint}
+import constraints.{AllDifferent, ExpressionConstraint, Constraint}
 import models.uninstantiated.UninstantiatedModel
 import oscar.cp
 import oscar.cp.{CPIntVarOps,CPBoolVarOps}
@@ -36,6 +36,7 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
   override def post(constraint: Constraint): Unit = {
     constraint match {
       case ExpressionConstraint(expr: BoolExpression) => postBooleanExpression(expr)
+      case AllDifferent(array) => cpSolver.post(new cp.constraints.AllDifferent(array.map(postIntExpressionAndGetVar)))
       case default => throw new Exception() //TODO: put a real exception here
     }
   }
