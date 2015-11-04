@@ -94,7 +94,7 @@ class ConstraintsVisualisation(constraints: Array[Constraint], name: String) {
       case Max(a) => basicCreate(expr, "Max", a, "")
       case Min(a) => basicCreate(expr, "Min", a, "")
       case Minus(a, b) => basicCreate(expr, "Minus", Seq(a,b), "-")
-      case Modulo(a, b) => basicCreate(expr, "Modulo", Seq(a,b), "%")
+      case Modulo(a, b) => basicCreate(expr, "Modulo", Seq(a,Constant(b)), "%")
       case Not(a) => basicCreate(expr, "Not", Seq(a), "")
       case NotEq(a, b) => basicCreate(expr, "Not equal", Seq(a, b), "!=")
       case Or(a) => basicCreate(expr, "Or", a, "||")
