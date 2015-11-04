@@ -64,6 +64,7 @@ trait IntExpression {
   def == (b: Int): BoolExpression = new Eq(this, b)
   def === (b: IntExpression): BoolExpression = new Eq(this, b)
   def != (b: IntExpression): BoolExpression = new NotEq(this, b)
+  def != (b: Int): BoolExpression = new NotEq(this, b)
   def >= (b: IntExpression): BoolExpression = new GrEq(this, b)
   def > (b: IntExpression): BoolExpression = new Gr(this, b)
   def <= (b: IntExpression): BoolExpression = new LrEq(this, b)

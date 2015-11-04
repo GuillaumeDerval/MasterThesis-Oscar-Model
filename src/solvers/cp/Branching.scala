@@ -11,7 +11,14 @@ trait Branching {
   def apply(model: InstantiatedCPModel) = forModel(model)
 }
 
-object Branchings{
+object Branching{
+  def apply(a: => Seq[oscar.algo.search.Alternative]) = new CustomBranching(a)
+  val noAlternative = oscar.algo.search.noAlternative
+  type Alternative = oscar.algo.search.Alternative
+  def branch(left : => Unit)(right : => Unit) : Seq[Alternative] = oscar.algo.search.branch(left)(right)
+  def branchOne(action : => Unit) : Seq[Alternative] = oscar.algo.search.branchOne(action)
+  def branchAll[A](indexes : Seq[A])(f : A => Unit) : Seq[Alternative] = oscar.algo.search.branchAll(indexes)(f)
+
   def binaryIdx(variables: Array[IntVar], varHeuristic: (Int => Int), valHeuristic: (Int => Int)): Branching = {
     new BinaryBranching(variables, varHeuristic, valHeuristic)
   }

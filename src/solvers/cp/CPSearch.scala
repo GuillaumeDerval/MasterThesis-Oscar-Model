@@ -8,7 +8,6 @@ import solvers.SolutionManager
 trait CPSearch extends SolutionManager {
   private var branching: Branching = null
   def getSearch = branching
-  def setSearch(b: Branching): Unit = {
-    branching = b
-  }
+  def setSearch(b: Branching): Unit = branching = b
+  def setSearch(b: => Seq[oscar.algo.search.Alternative]): Unit = branching = Branching(b)
 }

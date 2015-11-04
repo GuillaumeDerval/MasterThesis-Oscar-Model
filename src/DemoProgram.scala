@@ -1,10 +1,12 @@
 import constraints.AllDifferent
 import models.ModelDeclaration
-import solvers.cp.{Branchings, CPSearch}
+import solvers.cp.CPSearch
 import vars.IntVar
 import algebra.IntExpression._
 import algebra.BoolExpression._
-import visualisation.ConstraintsVisualisation
+import oscar.util._
+import solvers.cp.Branching
+import solvers.cp.Branching.{Alternative, noAlternative, branch}
 
 class DemoDistributedModel extends ModelDeclaration with CPSearch {
   val s = IntVar(0, 9)
@@ -30,7 +32,17 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
   post(m > 0)
   post(AllDifferent(Array(s,e,n,d,m,o,r,y)))
 
-  setSearch(Branchings.binaryFirstFail(Array(s,e,n,d,m,o,r,y)))
+  setSearch(Branching.binaryFirstFail(Array(s,e,n,d,m,o,r,y)))
+
+  setSearch {
+    selectMin(Array(s,e,n,d,m,o,r,y))(!_.isBound)(_.size) match {
+      case None => noAlternative
+      case Some(x) =>
+        val v = x.min
+        branch { post(x == v) }{ post(x != v) }
+    }
+  }
+
   onSolution {
     println("-----")
     println("s=" + s.toString)
