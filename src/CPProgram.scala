@@ -2,7 +2,8 @@ import models._
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
-import solvers.CPSolver
+import solvers.SolutionManager
+import solvers.cp.{CPSearch, CPSolver}
 import vars.{IntVar, IntVarImplem}
 
 /**
@@ -37,9 +38,6 @@ class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch 
    * Solve the model, by instantiating it and starting the resolution
    */
   def solve(model: InstantiatedCPModel): Unit = {
-    //Create solvers.CPSolver
-    val solver = new CPSolver(model)
-
     //Get the search
     var search = getSearch
     if (search == null && modelDeclaration.isInstanceOf[CPSearch])
@@ -52,7 +50,9 @@ class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch 
 
     //Start the solver
     modelDeclaration.applyFuncOnModel(model) {
-      search(model)
+      model.cpSolver.onSolution {on_solution(model)}
+      model.cpSolver.search(search(model))
+      println(model.cpSolver.start())
     }
   }
 }

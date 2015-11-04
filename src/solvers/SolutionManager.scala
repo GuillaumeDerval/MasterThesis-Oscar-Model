@@ -1,4 +1,6 @@
-package models
+package solvers
+
+import models.Model
 
 /**
  * Trait used by classes that provides a way to handle new solutions of a solver

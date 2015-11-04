@@ -1,6 +1,7 @@
-package solvers
+package solvers.cp
 
 import models.Model
+import solvers.Solver
 
 /**
  * A CPSolver
