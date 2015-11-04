@@ -14,24 +14,23 @@ import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage,
  * @param p: the parent Model
  */
 class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
-  implicit lazy val cpStore = new oscar.cp.CPStore //must be lazy as it is used by instantiate*** that is called from superclass' constructor
-
+  implicit lazy val cpSolver = new oscar.cp.CPSolver()
   override type IntVarImplementation = CPIntVar
 
   override protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): CPIntVar = {
-    new CPIntVar(adaptable.content, cpStore)
+    new CPIntVar(adaptable.content, cpSolver)
   }
 
   override protected def instantiateSetDomainStorage(set: SetDomainStorage): CPIntVar = {
-    new CPIntVar(set, cpStore)
+    new CPIntVar(set, cpSolver)
   }
 
   override protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): CPIntVar = {
-    new CPIntVar(singleton, cpStore)
+    new CPIntVar(singleton, cpSolver)
   }
 
   override protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): CPIntVar = {
-    new CPIntVar(interval, cpStore)
+    new CPIntVar(interval, cpSolver)
   }
 
   override def post(constraint: Constraint): Unit = {
@@ -50,7 +49,7 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
         postBooleanExpression(a)
         postBooleanExpression(b)
       case BinaryOr(a, b) =>
-        cpStore.add(oscar.cp.or(Array(postBoolExpressionAndGetVar(a),postBoolExpressionAndGetVar(b))))
+        cpSolver.add(oscar.cp.or(Array(postBoolExpressionAndGetVar(a),postBoolExpressionAndGetVar(b))))
       case Eq(a, b) =>
         postConstraintForPossibleConstant(a, b,
           (x,y)=>(y == x),
@@ -58,17 +57,17 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
           (x,y)=>(x == y)
         )
       case Gr(a, b) =>
-        cpStore.add(new oscar.cp.constraints.Gr(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.Gr(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
       case GrEq(a, b) =>
-        cpStore.add(new oscar.cp.constraints.GrEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.GrEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
       case Lr(a, b) =>
-        cpStore.add(new oscar.cp.constraints.Le(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.Le(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
       case LrEq(a, b) =>
-        cpStore.add(new oscar.cp.constraints.LeEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.LeEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
       case Or(a) =>
-        cpStore.add(oscar.cp.or(a.map(postBoolExpressionAndGetVar)))
+        cpSolver.add(oscar.cp.or(a.map(postBoolExpressionAndGetVar)))
       case Not(a) =>
-        cpStore.add(postBoolExpressionAndGetVar(a).not)
+        cpSolver.add(postBoolExpressionAndGetVar(a).not)
       case NotEq(a, b) =>
         postConstraintForPossibleConstant(a, b,
           (x,y)=>(y != x),
@@ -76,14 +75,14 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
           (x,y)=>(x != y)
         )
       case InSet(a, b) =>
-        cpStore.add(new cp.constraints.InSet(postIntExpressionAndGetVar(a), b))
+        cpSolver.add(new cp.constraints.InSet(postIntExpressionAndGetVar(a), b))
       case Implication(a, b) =>
         val v = oscar.cp.CPBoolVar()
-        cpStore.add(new oscar.cp.constraints.Implication(v, postBoolExpressionAndGetVar(a), postBoolExpressionAndGetVar(b)))
-        cpStore.add(v)
+        cpSolver.add(new oscar.cp.constraints.Implication(v, postBoolExpressionAndGetVar(a), postBoolExpressionAndGetVar(b)))
+        cpSolver.add(v)
       case Xor(a, b) => throw new Exception() //TODO: throw valid exception
       case v: BoolVar =>
-        cpStore.add(getRepresentative(v).realCPVar.asInstanceOf[oscar.cp.CPBoolVar])
+        cpSolver.add(getRepresentative(v).realCPVar.asInstanceOf[oscar.cp.CPBoolVar])
     }
   }
 
@@ -125,7 +124,7 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
       case Constant(a) => oscar.cp.CPIntVar(a)
       case Count(x, y) =>
         val v = oscar.cp.CPIntVar(0, x.length)
-        cpStore.add(new oscar.cp.constraints.Count(v, x.map(postIntExpressionAndGetVar), postIntExpressionAndGetVar(y)))
+        cpSolver.add(new oscar.cp.constraints.Count(v, x.map(postIntExpressionAndGetVar), postIntExpressionAndGetVar(y)))
         v
       case Element(x, y) =>
         val vx: Array[oscar.cp.CPIntVar] = x.map(postIntExpressionAndGetVar)
@@ -134,12 +133,12 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
       case Max(x) =>
         val vx = x.map(postIntExpressionAndGetVar)
         val m = oscar.cp.CPIntVar(vx.map(_.min).max, vx.map(_.max).max)
-        cpStore.add(oscar.cp.maximum(vx, m))
+        cpSolver.add(oscar.cp.maximum(vx, m))
         m
       case Min(x) =>
         val vx = x.map(postIntExpressionAndGetVar)
         val m = oscar.cp.CPIntVar(vx.map(_.min).min, vx.map(_.max).min)
-        cpStore.add(oscar.cp.maximum(vx, m))
+        cpSolver.add(oscar.cp.maximum(vx, m))
         m
       case Minus(x, y) =>
         getCPIntVarForPossibleConstant(x, y,
@@ -148,7 +147,7 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
           (a,b) => (a - b))
       case Modulo(x, y) =>
         val v = oscar.cp.CPIntVar(expr.min, expr.max)
-        cpStore.add(new CPIntVarOps(postIntExpressionAndGetVar(x)) % y == v)
+        cpSolver.add(new CPIntVarOps(postIntExpressionAndGetVar(x)) % y == v)
         v
       case Prod(x, y) =>
         getCPIntVarForPossibleConstant(x, y,
@@ -186,9 +185,9 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
                                         rightCst: (oscar.cp.CPIntVar, Int) => oscar.cp.Constraint,
                                         allVar: (oscar.cp.CPIntVar, oscar.cp.CPIntVar) => oscar.cp.Constraint): Unit = {
     (a,b) match {
-      case (Constant(value), variable:IntExpression) => cpStore.add(leftCst(value, postIntExpressionAndGetVar(variable)))
-      case (variable: IntExpression, Constant(value)) => cpStore.add(rightCst(postIntExpressionAndGetVar(variable), value))
-      case (v1: IntExpression, v2: IntExpression) => cpStore.add(allVar(postIntExpressionAndGetVar(v1), postIntExpressionAndGetVar(v2)))
+      case (Constant(value), variable:IntExpression) => cpSolver.add(leftCst(value, postIntExpressionAndGetVar(variable)))
+      case (variable: IntExpression, Constant(value)) => cpSolver.add(rightCst(postIntExpressionAndGetVar(variable), value))
+      case (v1: IntExpression, v2: IntExpression) => cpSolver.add(allVar(postIntExpressionAndGetVar(v1), postIntExpressionAndGetVar(v2)))
     }
   }
 
