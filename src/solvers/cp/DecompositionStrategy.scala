@@ -1,5 +1,6 @@
 package solvers.cp
 
+import constraints.Table
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
@@ -18,10 +19,11 @@ class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) =>
 {
   override def decompose(model: UninstantiatedModel, count: Integer): List[Map[IntVar, Int]] = {
     var nbSolutions = 1
+    var retval: List[Map[IntVar, Int]] = null
     for(i <- 0 until vars.length) {
       nbSolutions *= vars(i).size
       if(nbSolutions >= count) {
-        val retval = tryDecomposition(model, vars.take(i))
+        retval = tryDecomposition(model, vars.take(i), retval)
         if(retval.size >= count || i == vars.length - 1)
           return retval
         nbSolutions = retval.size
@@ -31,7 +33,7 @@ class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) =>
     null
   }
 
-  def tryDecomposition(model: UninstantiatedModel, svars: Array[IntVar]): List[Map[IntVar, Int]] = {
+  def tryDecomposition(model: UninstantiatedModel, svars: Array[IntVar], oldvalues: List[Map[IntVar, Int]]): List[Map[IntVar, Int]] = {
     val cpmodel = CPInstantiate(model)
     val list = new mutable.MutableList[Map[IntVar, Int]]
 
@@ -43,7 +45,13 @@ class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) =>
         list += m.toMap
       }
       cpmodel.cpSolver.search(search(svars).apply(cpmodel))
-      println(cpmodel.cpSolver.start())
+      cpmodel.cpSolver.startSubjectTo() {
+        if(oldvalues != null && oldvalues.nonEmpty) {
+          val vars = oldvalues.head.keys.toArray
+          val values = oldvalues.map(m => vars.map(v => m(v))).toArray
+          cpmodel.post(Table(vars, values))
+        }
+      }
     }
 
     list.toList
