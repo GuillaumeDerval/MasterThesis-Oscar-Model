@@ -1,8 +1,11 @@
 package constraints
 
 /**
- * Created by dervalguillaume on 20/10/15.
+ * Some flags that can be used on constraint. Flags really used depends on the method you use to solve the model
  */
-class ConstraintPower {
+object ConstraintPower extends Enumeration {
+  type ConstraintPower = Value
 
+  //CP
+  val Weak, Medium, Strong, Automatic = ConstraintPower
 }

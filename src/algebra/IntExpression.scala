@@ -84,4 +84,6 @@ object IntExpression
   class ArrayIntExpressionElementConstraintBuilder(val array: Array[IntExpression]) {
     def apply(id: IntExpression): IntExpression = new Element(array, id)
   }
+
+  implicit def array_intvar(v: Array[IntVar]): Array[IntExpression] = v.asInstanceOf[Array[IntExpression]]
 }

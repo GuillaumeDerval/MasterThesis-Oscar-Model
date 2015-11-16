@@ -1,14 +1,43 @@
 import constraints.AllDifferent
 import models.ModelDeclaration
-import solvers.cp.CPSearch
+import solvers.cp._
 import vars.IntVar
 import algebra.IntExpression._
 import algebra.BoolExpression._
 import oscar.util._
-import solvers.cp.Branching
-import solvers.cp.Branching.{Alternative, noAlternative, branch}
+import solvers.cp.Branching.{noAlternative, branch}
 
-class DemoDistributedModel extends ModelDeclaration with CPSearch {
+class DemoNQueens extends ModelDeclaration with DistributedCPSolve[String] /*CPSolve*/ {
+  val nQueens = 17 // Number of queens
+  val Queens = 0 until nQueens
+
+  // Variables
+  val queens = Array.fill(nQueens)(IntVar(0, nQueens - 1))
+
+  // Constraints
+  post(AllDifferent(queens))
+  post(AllDifferent(Queens.map(i => queens(i) + i).toArray))
+  post(AllDifferent(Queens.map(i => queens(i) - i).toArray))
+
+  setSearch(Branching.binaryFirstFail(queens))
+  onSolution {
+    val s = queens.map(_.min).mkString("-")
+    //println(s)
+    s
+  }
+  setDecompositionStrategy(new ReginDecompositionStrategy(queens))
+}
+
+object DemoDistribute extends DistributedCPProgram(new DemoNQueens()) with App {
+  val t0 = System.nanoTime()
+  solve()
+  val t1 = System.nanoTime()
+  val elapsed = (t1.toDouble - t0.toDouble)/math.pow(10, 9)
+
+  println("Elapsed time: " + elapsed + "s")
+}
+
+class DemoDistributedModel extends ModelDeclaration with CPSolve {
   val s = IntVar(0, 9)
   val e = IntVar(0, 9)
   val n = IntVar(0, 9)
@@ -17,12 +46,6 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
   val o = IntVar(0, 9)
   val r = IntVar(0, 9)
   val y = IntVar(0, 9)
-
-  /*var c = s*1000 + e*100 + n*10 + d +
-    m*1000 + o*100 + r*10 + e ==
-    m*10000 + o*1000 + n*100 + e*10 + y
-  new ConstraintsVisualisation(Array[Constraint](c), "").display()
-  new ConstraintsVisualisation(Array[Constraint](SimplifySum(c)), "").display()*/
 
   // constraints
   post(s*1000 + e*100 + n*10 + d +
@@ -55,10 +78,6 @@ class DemoDistributedModel extends ModelDeclaration with CPSearch {
     println("y=" + y.toString)
     println("-----")
   }
-}
-
-object DemoDistribute extends CPProgram(new DemoDistributedModel()) with App {
-  solve()
 }
 
 object DemoProgram extends CPProgram with App {

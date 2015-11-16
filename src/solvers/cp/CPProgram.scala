@@ -1,10 +1,9 @@
+package solvers.cp
+
 import models._
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
-import solvers.SolutionManager
-import solvers.cp.{CPSearch, CPSolver}
-import vars.{IntVar, IntVarImplem}
 
 /**
  * A program that uses a CP solver, with a single search
@@ -13,12 +12,19 @@ import vars.{IntVar, IntVarImplem}
  * search defined inside will be used if none is currently defined. The same goes 
  * for onSolution with SolutionManager/CPSearch
  */
-class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch {
+class CPProgram(md: ModelDeclaration with CPSolve = new ModelDeclaration() with CPSolve) {
   implicit val program = this
   implicit val modelDeclaration = md
 
   def getDeclaredModel = modelDeclaration.getDeclaredModel
   def getCurrentModel = modelDeclaration.getCurrentModel
+
+  def getSearch = md.getSearch
+  def setSearch(b: Branching): Unit = md.setSearch(b)
+  def setSearch(b: => Seq[oscar.algo.search.Alternative]): Unit = md.setSearch(b)
+  def onSolution = md.onSolution
+  def onSolution(s: => Unit): Unit = md.onSolution(s)
+  def onSolution(o: Model => Unit): Unit = md.onSolution(o)
 
   def solve(): Unit = solve(modelDeclaration.getCurrentModel)
 
@@ -38,20 +44,10 @@ class CPProgram(md: ModelDeclaration = new ModelDeclaration()) extends CPSearch 
    * Solve the model, by instantiating it and starting the resolution
    */
   def solve(model: InstantiatedCPModel): Unit = {
-    //Get the search
-    var search = getSearch
-    if (search == null && modelDeclaration.isInstanceOf[CPSearch])
-      search = modelDeclaration.asInstanceOf[CPSearch].getSearch
-
-    //Get onSolution
-    var on_solution = onSolution
-    if (on_solution == null && modelDeclaration.isInstanceOf[SolutionManager])
-      on_solution = modelDeclaration.asInstanceOf[SolutionManager].onSolution
-
     //Start the solver
     modelDeclaration.applyFuncOnModel(model) {
-      model.cpSolver.onSolution {on_solution(model)}
-      model.cpSolver.search(search(model))
+      model.cpSolver.onSolution {onSolution(model)}
+      model.cpSolver.search(getSearch(model))
       println(model.cpSolver.start())
     }
   }
