@@ -1,6 +1,7 @@
 package solvers.cp
 
 import models.Model
+import solvers.cp.decompositions.DecompositionStrategy
 
 trait DistributedCPSolve[RetVal] {
   private var branching: Branching = null

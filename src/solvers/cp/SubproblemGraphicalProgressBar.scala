@@ -1,10 +1,11 @@
 package solvers.cp
 
 import java.awt._
+import java.util.TimerTask
 import javax.swing._
 
 import misc.TimeHelper._
-import misc.{FixedBinsHistogramDataset, SimpleMovingAverage}
+import misc.{ExponentialMovingAverage, FixedBinsHistogramDataset, SimpleMovingAverage}
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.{ChartFactory, ChartPanel}
 import org.jfree.data.xy
@@ -34,19 +35,39 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private val cpuTimeTotal: JLabel = new JLabel("")
   private val solutionsFoundLabel: JLabel = new JLabel("0")
 
-  private val startTime = getClockTime
+  private var startTime = 0.0
+  def start(): Unit = startTime = getClockTime
+
   private val timeStorage = new ArrayBuffer[(Double, Double, Double, Double)]
   private var solutionsFound = 0
+
+  private var lastElapsedWallTime = 0.0
+  private var lastRemainingWallTime = 0.0
+  private var lastElapsedCPUTime = 0.0
+  private var lastRemainingCPUTime = 0.0
+
+  //subproblemsTime contains:
+  // - for done subproblems: the time taken to solve them (cpu)
+  // - for not started subproblems: 0.0
+  // - for started but not yet solved subproblems: the solve start time (clock)
+  private val subproblemsTime = Array.tabulate(nbSubproblems)(i => 0.0)
+  private var subproblemsDone = 0
+  private val subproblemsResolving = new mutable.HashSet[Int]
+  private val instantMeanTime = new SimpleMovingAverage(10)
+  private val exponentialMeanTime = new ExponentialMovingAverage(0.01) //TODO: value
+  private var subproblemsTotalCPUTime = 0.0
 
   /*
     CHARTS
    */
   private val totalWallTimePlotPoints = new XYSeries("Wall")
   private val totalCPUTimePlotPoints = new XYSeries("CPU")
+  private val totalCPUTimeExpPlotPoints = new XYSeries("CPU (exp average)")
 
   private val meanWallTimePlotPoints = new XYSeries("Mean (Wall)")
   private val meanCPUTimePlotPoints = new XYSeries("Mean (CPU)")
   private val instantMeanCPUTimePlotPoints = new XYSeries("Simple moving mean (size 10) (CPU)")
+  private val exponentialMeanCPUTimePlotPoints = new XYSeries("Exp moving mean (0.1) (CPU)")
 
   private val subproblemCPUTimeHistogram = new FixedBinsHistogramDataset("CPU", 50)
 
@@ -54,9 +75,12 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private val collectionMean = new xy.XYSeriesCollection()
   collectionTotal.addSeries(totalWallTimePlotPoints)
   collectionTotal.addSeries(totalCPUTimePlotPoints)
+  collectionTotal.addSeries(totalCPUTimeExpPlotPoints)
+  
   collectionMean.addSeries(meanWallTimePlotPoints)
   collectionMean.addSeries(meanCPUTimePlotPoints)
   collectionMean.addSeries(instantMeanCPUTimePlotPoints)
+  collectionMean.addSeries(exponentialMeanCPUTimePlotPoints)
 
   private val totalTimeChart = ChartFactory.createXYLineChart("", "Wall time", "Total time estimated",
     collectionTotal, PlotOrientation.VERTICAL, true, true, false)
@@ -117,61 +141,65 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   add(statPanel)
   add(timePanel)
 
-
   setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20))
 
-  private def updateProgressBar(): Unit = {
+  val timer = new java.util.Timer
+  timer.scheduleAtFixedRate(new TimerTask() {
+    override def run() = {
+      Swing.onEDTWait {
+        updateOnEDT()
+      }
+    }
+  }, 0, 100)
+
+
+  private def updateOnEDT(): Unit = {
     progressBar.setValue(subproblemsDone)
-  }
-
-  private def updateSubproblemStatus(): Unit = {
     subproblemStatus.setText("" + subproblemsDone + "/" + nbSubproblems)
-  }
-
-  private def updateSolutionsFound(): Unit = {
     solutionsFoundLabel.setText(solutionsFound.toString)
+
+    wallTimeRemaining.setText(round1000(lastRemainingWallTime / math.pow(10, 9)) + "s")
+    wallTimeElapsed.setText(round1000(lastElapsedWallTime / math.pow(10, 9)) + "s")
+    wallTimeTotal.setText(round1000((lastElapsedWallTime + lastRemainingWallTime) / math.pow(10, 9)) + "s")
+
+    cpuTimeRemaining.setText(round1000(lastRemainingCPUTime / math.pow(10, 9)) + "s")
+    cpuTimeElapsed.setText(round1000(lastElapsedCPUTime / math.pow(10, 9)) + "s")
+    cpuTimeTotal.setText(round1000((lastElapsedCPUTime + lastRemainingCPUTime) / math.pow(10, 9)) + "s")
+
+    cpuWallRatio.setText(round1000(lastElapsedCPUTime / lastElapsedWallTime).toString)
+
+    totalWallTimePlotPoints.fireSeriesChanged()
+    totalCPUTimePlotPoints.fireSeriesChanged()
+    totalCPUTimeExpPlotPoints.fireSeriesChanged()
+    meanWallTimePlotPoints.fireSeriesChanged()
+    meanCPUTimePlotPoints.fireSeriesChanged()
+    instantMeanCPUTimePlotPoints.fireSeriesChanged()
+    exponentialMeanCPUTimePlotPoints.fireSeriesChanged()
   }
 
   private def round1000(v: Double): Double = (v * 1000).toInt.toDouble / 1000
 
   private def updateTime(): Unit = {
-    val elapsedWallTime: Double = getClockTime - startTime
-    val meanWallTime = elapsedWallTime / subproblemsDone.toDouble
-    val remainingWallTime = (nbSubproblems - subproblemsDone).toDouble * meanWallTime
+    lastElapsedWallTime = getClockTime - startTime
+    val meanWallTime = lastElapsedWallTime / subproblemsDone.toDouble
+    lastRemainingWallTime = (nbSubproblems - subproblemsDone).toDouble * meanWallTime
 
-    val elapsedCPUTime: Double = subproblemsTotalCPUTime
+    lastElapsedCPUTime = subproblemsTotalCPUTime
     val meanCPUTime: Double = subproblemsTotalCPUTime / subproblemsDone.toDouble
-    val remainingCPUTime: Double = (nbSubproblems - subproblemsDone).toDouble * meanCPUTime
+    lastRemainingCPUTime = (nbSubproblems - subproblemsDone).toDouble * meanCPUTime
+    val remainingCPUTimeExp = (nbSubproblems - subproblemsDone).toDouble * exponentialMeanTime.get
 
-    wallTimeRemaining.setText(round1000(remainingWallTime / math.pow(10, 9)) + "s")
-    wallTimeElapsed.setText(round1000(elapsedWallTime / math.pow(10, 9)) + "s")
-    wallTimeTotal.setText(round1000((elapsedWallTime + remainingWallTime) / math.pow(10, 9)) + "s")
+    totalWallTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), (lastElapsedWallTime + lastRemainingWallTime) / math.pow(10, 9), false)
+    totalCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), (lastElapsedCPUTime + lastRemainingCPUTime) / math.pow(10, 9), false)
+    totalCPUTimeExpPlotPoints.add(lastElapsedWallTime / math.pow(10, 9), (lastElapsedCPUTime + remainingCPUTimeExp) / math.pow(10, 9), false)
 
-    cpuTimeRemaining.setText(round1000(remainingCPUTime / math.pow(10, 9)) + "s")
-    cpuTimeElapsed.setText(round1000(elapsedCPUTime / math.pow(10, 9)) + "s")
-    cpuTimeTotal.setText(round1000((elapsedCPUTime + remainingCPUTime) / math.pow(10, 9)) + "s")
+    meanWallTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), meanWallTime / math.pow(10, 9), false)
+    meanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), meanCPUTime / math.pow(10, 9), false)
+    instantMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), instantMeanTime.get / math.pow(10, 9), false)
+    exponentialMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), exponentialMeanTime.get / math.pow(10, 9), false)
 
-    cpuWallRatio.setText(round1000(elapsedCPUTime / elapsedWallTime).toString)
-
-    totalWallTimePlotPoints.add(elapsedWallTime / math.pow(10, 9), (elapsedWallTime + remainingWallTime) / math.pow(10, 9))
-    totalCPUTimePlotPoints.add(elapsedWallTime / math.pow(10, 9), (elapsedCPUTime + remainingCPUTime) / math.pow(10, 9))
-
-    meanWallTimePlotPoints.add(elapsedWallTime / math.pow(10, 9), meanWallTime / math.pow(10, 9))
-    meanCPUTimePlotPoints.add(elapsedWallTime / math.pow(10, 9), meanCPUTime / math.pow(10, 9))
-    instantMeanCPUTimePlotPoints.add(elapsedWallTime / math.pow(10, 9), instantMeanTime.get)
-
-    timeStorage += ((elapsedWallTime, remainingWallTime, elapsedCPUTime, remainingCPUTime))
+    timeStorage += ((lastElapsedWallTime, lastRemainingWallTime, lastElapsedCPUTime, lastRemainingCPUTime))
   }
-
-  //subproblemsTime contains:
-  // - for done subproblems: the time taken to solve them (cpu)
-  // - for not started subproblems: 0.0
-  // - for started but not yet solved subproblems: the solve start time (clock)
-  private val subproblemsTime = Array.tabulate(nbSubproblems)(i => 0.0)
-  private var subproblemsDone = 0
-  private val subproblemsResolving = new mutable.HashSet[Int]
-  private val instantMeanTime = new SimpleMovingAverage(10)
-  private var subproblemsTotalCPUTime = 0.0
 
   override def startedSubproblem(spid: Int): Unit = {
     subproblemsTime(spid) = getClockTime
@@ -185,15 +213,14 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     subproblemsTime(spid) = timeTaken
     subproblemsResolving -= spid
     subproblemsDone += 1
-    instantMeanTime.update(timeTaken / Math.pow(10, 9))
+    instantMeanTime.update(timeTaken)
+    exponentialMeanTime.update(timeTaken)
     subproblemsTotalCPUTime += timeTaken
+
+    updateTime()
 
     Swing.onEDT {
       subproblemCPUTimeHistogram.addObservation(timeTaken / Math.pow(10, 9))
-      updateProgressBar()
-      updateSubproblemStatus()
-      updateTime()
-      updateSolutionsFound()
     }
   }
 
@@ -201,7 +228,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     val totalWallTime: Double = getClockTime - startTime
     val totalCPUTime: Double = subproblemsTotalCPUTime
 
-    Swing.onEDT {
+    Swing.onEDTWait {
       subproblemCPUTimeHistogram.reinit()
 
       val errorTotalWallTime = new XYSeries("Total wall time error")

@@ -2,6 +2,8 @@ package solvers.cp
 
 import java.util
 
+import solvers.cp.decompositions.DecompositionStrategy
+
 import scala.util.Random
 import java.util.concurrent.LinkedBlockingQueue
 
@@ -60,10 +62,12 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
       queue.add(s)
 
     val threads = Array.tabulate(threadsToLaunch)(i => new Thread(new Subsolver(model, queue, outputQueue)))
-    val watcher_thread = new Thread(new WatcherRunnable(SubproblemGraphicalProgressBar[RetVal](subproblems.size, threadsToLaunch), outputQueue))
+    val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, threadsToLaunch)
+    val watcher_thread = new Thread(new WatcherRunnable(pb, outputQueue))
 
     watcher_thread.start()
     threads.foreach(_.start())
+    pb.start()
     threads.foreach(_.join())
     outputQueue.add(AllDoneMessage())
     watcher_thread.join()
