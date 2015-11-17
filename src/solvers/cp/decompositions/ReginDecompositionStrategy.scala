@@ -1,19 +1,12 @@
-package solvers.cp
+package solvers.cp.decompositions
 
 import constraints.Table
-import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
+import solvers.cp.Branching
 import vars.IntVar
 
 import scala.collection.mutable
-
-/**
-  * Created by dervalguillaume on 6/11/15.
-  */
-trait DecompositionStrategy {
-  def decompose(model: UninstantiatedModel, count: Integer): List[Map[IntVar, Int]]
-}
 
 class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.binaryFirstFail(_)) extends DecompositionStrategy
 {
