@@ -46,6 +46,8 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private var lastElapsedCPUTime = 0.0
   private var lastRemainingCPUTime = 0.0
 
+  private var lastBound: Option[Int] = None
+
   //subproblemsTime contains:
   // - for done subproblems: the time taken to solve them (cpu)
   // - for not started subproblems: 0.0
@@ -54,7 +56,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private var subproblemsDone = 0
   private val subproblemsResolving = new mutable.HashSet[Int]
   private val instantMeanTime = new SimpleMovingAverage(10)
-  private val exponentialMeanTime = new ExponentialMovingAverage(0.01) //TODO: value
+  private val exponentialMeanTime = new ExponentialMovingAverage(0.05) //TODO: value
   private var subproblemsTotalCPUTime = 0.0
 
   /*
@@ -69,10 +71,13 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private val instantMeanCPUTimePlotPoints = new XYSeries("Simple moving mean (size 10) (CPU)")
   private val exponentialMeanCPUTimePlotPoints = new XYSeries("Exp moving mean (0.1) (CPU)")
 
+  private val boundPlotPoints = new XYSeries("")
+
   private val subproblemCPUTimeHistogram = new FixedBinsHistogramDataset("CPU", 50)
 
   private val collectionTotal = new xy.XYSeriesCollection()
   private val collectionMean = new xy.XYSeriesCollection()
+  private val collectionBound = new xy.XYSeriesCollection()
   collectionTotal.addSeries(totalWallTimePlotPoints)
   collectionTotal.addSeries(totalCPUTimePlotPoints)
   collectionTotal.addSeries(totalCPUTimeExpPlotPoints)
@@ -82,10 +87,14 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   collectionMean.addSeries(instantMeanCPUTimePlotPoints)
   collectionMean.addSeries(exponentialMeanCPUTimePlotPoints)
 
+  collectionBound.addSeries(boundPlotPoints)
+
   private val totalTimeChart = ChartFactory.createXYLineChart("", "Wall time", "Total time estimated",
     collectionTotal, PlotOrientation.VERTICAL, true, true, false)
   private val meanTimeChart = ChartFactory.createXYLineChart("", "Wall time", "Time taken per subproblem",
     collectionMean, PlotOrientation.VERTICAL, true, true, false)
+  private val boundChart = ChartFactory.createXYLineChart("", "Wall time", "Bound value",
+    collectionBound, PlotOrientation.VERTICAL, true, true, false)
   private val subproblemCPUTimeChart = ChartFactory.createHistogram("", "CPU Time", "#",
     subproblemCPUTimeHistogram.getRealDataset, PlotOrientation.VERTICAL, true, true, false)
 
@@ -93,6 +102,8 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   totalTimeChart.setBackgroundImageAlpha(0.0f)
   meanTimeChart.setBackgroundPaint(new Color(255, 255, 255, 0))
   meanTimeChart.setBackgroundImageAlpha(0.0f)
+  boundChart.setBackgroundPaint(new Color(255, 255, 255, 0))
+  boundChart.setBackgroundImageAlpha(0.0f)
   subproblemCPUTimeChart.setBackgroundPaint(new Color(255, 255, 255, 0))
   subproblemCPUTimeChart.setBackgroundImageAlpha(0.0f)
 
@@ -100,6 +111,8 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   totalTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
   private val meanTimeChartPanel: ChartPanel = new ChartPanel(meanTimeChart)
   meanTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
+  private val boundChartPanel: ChartPanel = new ChartPanel(boundChart)
+  boundChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
   private val subproblemCPUTimeChartPanel: ChartPanel = new ChartPanel(subproblemCPUTimeChart)
   subproblemCPUTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
 
@@ -131,9 +144,10 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   statPanel.add(new JLabel("CPU/Wall ratio: ", SwingConstants.LEFT))
   statPanel.add(cpuWallRatio)
 
-  private val chartPanel = new JPanel(new GridLayout(2, 2))
+  private val chartPanel = new JPanel(new GridLayout(2, 3))
   chartPanel.add(totalTimeChartPanel)
   chartPanel.add(meanTimeChartPanel)
+  chartPanel.add(boundChartPanel)
   chartPanel.add(subproblemCPUTimeChartPanel)
 
   add(progressBar)
@@ -198,6 +212,11 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     instantMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), instantMeanTime.get / math.pow(10, 9), false)
     exponentialMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), exponentialMeanTime.get / math.pow(10, 9), false)
 
+    lastBound match {
+      case Some(b) => boundPlotPoints.add(lastElapsedWallTime / math.pow(10, 9), b)
+      case None =>
+    }
+
     timeStorage += ((lastElapsedWallTime, lastRemainingWallTime, lastElapsedCPUTime, lastRemainingCPUTime))
   }
 
@@ -209,14 +228,14 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   override def newSolution(solution: T): Unit = solutionsFound += 1
 
 
-  override def endedSubproblem(spid: Int, timeTaken: Double): Unit = {
+  override def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int]): Unit = {
     subproblemsTime(spid) = timeTaken
     subproblemsResolving -= spid
     subproblemsDone += 1
     instantMeanTime.update(timeTaken)
     exponentialMeanTime.update(timeTaken)
     subproblemsTotalCPUTime += timeTaken
-
+    lastBound = currentBound
     updateTime()
 
     Swing.onEDT {

@@ -22,3 +22,13 @@ case class Sum(val v: Array[IntExpression]) extends IntExpression {
    */
   override def mapSubexpressions(func: (IntExpression) => IntExpression): IntExpression = new Sum(v.map(func))
 }
+
+object Sum {
+  def apply(v: Iterable[IntExpression]): Sum = Sum(v.toArray)
+
+  def apply[A](indices: Iterable[A])(f: A => IntExpression): Sum = Sum(indices map f)
+
+  def apply[A, B](indices1: Iterable[A], indices2: Iterable[B])(f: (A, B) => IntExpression): Sum = Sum(for (i <- indices1; j <- indices2) yield f(i, j))
+
+  def apply(n1: Int, n2: Int)(f: (Int, Int) => IntExpression): Sum = Sum(0 until n1, 0 until n2)(f)
+}

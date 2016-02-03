@@ -8,11 +8,16 @@ import vars.domainstorage.int._
 
 import scala.util.Random
 
-/**
-  * Created by dervalguillaume on 3/11/15.
-  */
-class CPBoolVar(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extends CPVar with BoolVarImplem {
-  val realCPVar = if(notInstantied.isBound) oscar.cp.CPBoolVar(notInstantied.min == 1)(store) else oscar.cp.CPBoolVar()(store)
+abstract class CPBoolVar extends CPIntVar with BoolVarImplem {
+  val realCPVar: oscar.cp.CPBoolVar
+}
+
+object CPBoolVar {
+  def apply(notInstantied: IntDomainStorage, store: oscar.cp.CPStore): CPBoolVar = new CPBoolVarImpl(notInstantied, store)
+}
+
+class CPBoolVarImpl(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extends CPBoolVar {
+  val realCPVar = if(notInstantied.isBound) oscar.cp.CPBoolVar(notInstantied.min != 0)(store) else oscar.cp.CPBoolVar()(store)
 
   /**
     * @return true if the domain of the variable has exactly one value, false if the domain has more than one value
@@ -62,6 +67,8 @@ class CPBoolVar(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extend
     * @throws EmptyDomainException
     */
   override def assign(value: Int): Unit = {
+    if(realCPVar.isBound && realCPVar.min != value)
+      throw new EmptyDomainException
     val outcome = realCPVar.assign(value)
     if(outcome == CPOutcome.Failure)
       throw new EmptyDomainException

@@ -18,4 +18,6 @@ abstract class UninstantiatedModel extends Model {
    * @param constraint
    */
   def post(constraint: Constraint): Unit = constraints += constraint
+
+  override protected def optimisationMethodUpdated(): Unit = {}
 }

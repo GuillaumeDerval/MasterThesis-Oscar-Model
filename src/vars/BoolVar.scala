@@ -2,6 +2,7 @@ package vars
 
 import algebra.{IntExpression, Not, BoolExpression}
 import constraints.{ExpressionConstraint, Constraint}
+import misc.VariableNotBoundException
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage
 
@@ -17,11 +18,9 @@ class BoolVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends I
    */
   def constraintFalse(): Constraint = new ExpressionConstraint(new Not(this))
 
-  // Scala imposes to choose between the implementation in IntVar and the one in BoolExpression;
-  // we choose the one in IntVar
-  override def max: Int = this.asInstanceOf[IntVar].max
-  override def min: Int = this.asInstanceOf[IntVar].min
-  override def evaluate(): Int = this.asInstanceOf[IntVar].evaluate()
+  override def max: Int = getRepresentative.max
+  override def min: Int = getRepresentative.min
+  override def evaluate(): Int = if(isBound) max else throw new VariableNotBoundException()
   override def evaluateBool(): Boolean = evaluate() == 1
 
   override def subexpressions(): Iterable[IntExpression] = Array[IntExpression]()
@@ -32,4 +31,5 @@ object BoolVar {
   def apply(containsFalse: Boolean, containsTrue: Boolean, name: Option[String] = None)(implicit model_decl: ModelDeclaration) = {
     new BoolVar(model_decl, IntDomainStorage(if (containsFalse) 0 else 1, if (containsFalse) 1 else 0, name))
   }
+  def apply()(implicit model_decl: ModelDeclaration) = new BoolVar(model_decl, IntDomainStorage(0,1))
 }

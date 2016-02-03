@@ -1,34 +1,80 @@
+import algebra.Sum
 import constraints.AllDifferent
 import models.ModelDeclaration
 import solvers.cp._
+import solvers.cp.decompositions.ReginDecompositionStrategy
 import vars.IntVar
 import algebra.IntExpression._
 import algebra.BoolExpression._
-import oscar.util._
+import oscar.util.selectMin
 import solvers.cp.Branching.{noAlternative, branch}
 
+import scala.io.Source
+
 class DemoNQueens extends ModelDeclaration with DistributedCPSolve[String] /*CPSolve*/ {
-  val nQueens = 17 // Number of queens
+  val nQueens = 16 // Number of queens
   val Queens = 0 until nQueens
 
   // Variables
   val queens = Array.fill(nQueens)(IntVar(0, nQueens - 1))
+
+  val toMin = Sum(queens.zipWithIndex.map((a: (IntVar, Int)) => a._1*(a._2*a._2))).reify()
 
   // Constraints
   post(AllDifferent(queens))
   post(AllDifferent(Queens.map(i => queens(i) + i).toArray))
   post(AllDifferent(Queens.map(i => queens(i) - i).toArray))
 
-  setSearch(Branching.binaryFirstFail(queens))
+  setSearch(Branching.binaryFirstFail(queens/* ++ Seq(toMin)*/))
   onSolution {
     val s = queens.map(_.min).mkString("-")
-    //println(s)
+    println(s)
     s
   }
+
+  minimize(toMin)
+
+  //setDecompositionStrategy(new NoDecompositionStrategy)
   setDecompositionStrategy(new ReginDecompositionStrategy(queens))
 }
 
+/*class ATSP extends ModelDeclaration with DistributedCPSolve[String] {
+  var lines = Source.fromFile("ftv70.atsp").getLines.toArray
+
+  lines = lines.take(lines.size-1) // drop EOF
+  val n = lines(3).split(":")(1).trim().toInt
+  val dist = lines.drop(7).reduceLeft(_ + " " + _).split("[ ,\t]").toList.filterNot(_ == "").map(_.toInt)
+
+  val distMatrixSucc = dist.sliding(n,n).toArray.map(_.toArray)
+
+  distMatrixSucc.foreach(i => println(i.mkString("\t")))
+  val succ = Array.fill(n)(IntVar(0, n-1))
+  val obj = IntVar(0, 1000000-1)
+  post(MinCircuit(succ, distMatrixSucc, obj))
+
+  minimize(obj)
+  //post(obj < 2125)
+
+  setSearch({
+
+    // Select the not yet bound city with the smallest number of possible successors
+    selectMin(0 until n)(!succ(_).isBound)(succ(_).size) match {
+      case None => noAlternative
+      case Some(x) => {
+        // Select the closest successors of the city x
+        val v = selectMin(0 until n)(succ(x).hasValue(_))(distMatrixSucc(x)(_)).get
+        branch(post(succ(x) == v))(post(succ(x) != v))
+      }
+    }
+  })
+
+  setDecompositionStrategy(new ReginDecompositionStrategy(succ))
+}*/
+
 object DemoDistribute extends DistributedCPProgram(new DemoNQueens()) with App {
+  this.subproblemsCount = 10000 //20
+  //this.subproblemsCount = 1
+  this.threadsToLaunch = 3
   val t0 = System.nanoTime()
   solve()
   val t1 = System.nanoTime()

@@ -2,7 +2,7 @@ package models.instantiated
 
 import misc.UnionFindStorage
 import models.uninstantiated.UninstantiatedModel
-import models.{Model, ModelDeclaration}
+import models.{OptimisationMethod, Model, ModelDeclaration}
 import vars.domainstorage.DomainStorage
 import vars.domainstorage.int._
 
@@ -13,6 +13,7 @@ abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
   override val intRepresentatives: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
+  override var optimisationMethod: OptimisationMethod = p.optimisationMethod
 
   for(c <- p.constraints)
     post(c)

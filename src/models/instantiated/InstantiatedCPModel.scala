@@ -1,36 +1,69 @@
 package models.instantiated
 
 import algebra._
-import constraints.{Table, AllDifferent, ExpressionConstraint, Constraint}
+import constraints._
+import models.{Maximisation, Minimisation}
 import models.uninstantiated.UninstantiatedModel
 import oscar.cp
-import oscar.cp.{CPIntVarOps,CPBoolVarOps}
+import oscar.cp.constraints.{CPObjectiveUnitMaximize, CPObjectiveUnitMinimize, CPObjective, CPObjectiveUnit}
+import oscar.cp.core.CPPropagStrength
+import oscar.cp.{CPIntVarOps, CPBoolVarOps}
+import vars.cp.int.CPBoolVar
 import vars.{BoolVar, IntVar}
-import vars.cp.int.CPIntVar
+import vars.cp.int.{CPIntVar, CPBoolVar}
 import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage, SetDomainStorage, SingletonDomainStorage}
 
 /**
  * An instantiated model, containing CPVars as implementations
- * @param p: the parent Model
+  *
+  * @param p: the parent Model
  */
 class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
   implicit lazy val cpSolver = new oscar.cp.CPSolver()
   override type IntVarImplementation = CPIntVar
+  var cpObjective: CPObjectiveUnit = null
+
+  optimisationMethodUpdated() //initialise the bound
+
+  override protected def optimisationMethodUpdated(): Unit = {
+    val v: CPObjectiveUnit= this.optimisationMethod match {
+      case m: Minimisation =>
+        new CPObjectiveUnitMinimize(this.getRepresentative(m.objective).realCPVar)
+      case m: Maximisation =>
+        new CPObjectiveUnitMaximize(this.getRepresentative(m.objective).realCPVar)
+      case _ => null
+    }
+    if(v != null)
+      cpSolver.optimize(new CPObjective(cpSolver, v))
+    cpObjective = v
+  }
 
   override protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): CPIntVar = {
-    new CPIntVar(adaptable.content, cpSolver)
+    if(adaptable.min >= 0 && adaptable.max <= 1)
+      CPBoolVar(adaptable, cpSolver)
+    else
+      CPIntVar(adaptable.content, cpSolver)
   }
 
   override protected def instantiateSetDomainStorage(set: SetDomainStorage): CPIntVar = {
-    new CPIntVar(set, cpSolver)
+    if(set.min >= 0 && set.max <= 1)
+      CPBoolVar(set, cpSolver)
+    else
+      CPIntVar(set, cpSolver)
   }
 
   override protected def instantiateSingletonDomainStorage(singleton: SingletonDomainStorage): CPIntVar = {
-    new CPIntVar(singleton, cpSolver)
+    if(singleton.min >= 0 && singleton.max <= 1)
+      CPBoolVar(singleton, cpSolver)
+    else
+      CPIntVar(singleton, cpSolver)
   }
 
   override protected def instantiateIntervalDomainStorage(interval: IntervalDomainStorage): CPIntVar = {
-    new CPIntVar(interval, cpSolver)
+    if(interval.min >= 0 && interval.max <= 1)
+      CPBoolVar(interval, cpSolver)
+    else
+      CPIntVar(interval, cpSolver)
   }
 
   override def post(constraint: Constraint): Unit = {
@@ -38,6 +71,8 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
       case ExpressionConstraint(expr: BoolExpression) => postBooleanExpression(expr)
       case AllDifferent(array) => cpSolver.post(cp.modeling.constraint.allDifferent(array.map(postIntExpressionAndGetVar)))
       case Table(array, values) => cpSolver.post(cp.modeling.constraint.table(array.map(postIntExpressionAndGetVar), values))
+      case MinCircuit(succ, distMatrixSucc, cost) => cpSolver.post(cp.modeling.constraint.minCircuit(succ.map(postIntExpressionAndGetVar), distMatrixSucc, postIntExpressionAndGetVar(cost)), CPPropagStrength.Strong)
+      case GCC(x, minVal, low, up) => cpSolver.post(new oscar.cp.constraints.GCC(x.map(postIntExpressionAndGetVar), minVal, low, up))
       case default => throw new Exception() //TODO: put a real exception here
     }
   }
@@ -176,6 +211,7 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
 
   /**
     * Post the right constraint depending on the type of a and b.
+    *
     * @param a
     * @param b
     * @param leftCst this function will be called if a is constant
@@ -195,6 +231,7 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
 
   /**
     * Post the right constraint depending on the type of a and b.
+    *
     * @param a
     * @param b
     * @param leftCst this function will be called if a is constant

@@ -1,5 +1,6 @@
 package solvers.cp
 
+import constraints.Constraint
 import models._
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
@@ -51,4 +52,10 @@ class CPProgram(md: ModelDeclaration with CPSolve = new ModelDeclaration() with 
       println(model.cpSolver.start())
     }
   }
+
+  /**
+    * Post a new constraint
+    * @param constraint
+    */
+  def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
 }

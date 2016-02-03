@@ -32,7 +32,7 @@ class ModelDeclaration {
    * @param func: function to apply
    */
   def applyFuncOnModel(model: Model)(func: => Unit) = {
-    assert(model.declaration == this, "The model must be a sub-model of the declarated model " +
+    assert(model.declaration == this, "The model must be a sub-model of the declared model " +
       "of this instance of ModelDeclaration")
     current_model.withValue(model)(func)
   }
@@ -42,4 +42,7 @@ class ModelDeclaration {
    * @param constraint
    */
   def post(constraint: Constraint): Unit = current_model.value.post(constraint)
+
+  def minimize(v: IntVar) = current_model.value.minimize(v)
+  def maximize(v: IntVar) = current_model.value.maximize(v)
 }

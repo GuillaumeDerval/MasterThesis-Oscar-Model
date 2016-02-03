@@ -3,7 +3,7 @@ package models
 import constraints.{ConstraintPower, Constraint}
 import constraints.ConstraintPower.ConstraintPower
 import misc.UnionFindStorage
-import vars.{IntVar, IntVarImplem, Var, VarImplem}
+import vars._
 
 import scala.collection.mutable
 
@@ -12,9 +12,11 @@ import scala.collection.mutable
  */
 trait Model {
   type IntVarImplementation <: IntVarImplem
+
   val declaration: ModelDeclaration
   val parent: Option[Model]
   val intRepresentatives: UnionFindStorage[IntVarImplementation]
+  var optimisationMethod: OptimisationMethod
 
   /**
    * Add a new variable with a new domain
@@ -49,4 +51,27 @@ trait Model {
    * @param constraint
    */
   def post(constraint: Constraint): Unit
+
+  /**
+    * Called when the optimisation method have been updated
+    */
+  protected def optimisationMethodUpdated(): Unit
+
+  /**
+    * Minimize v
+    * @param v
+    */
+  def minimize(v: IntVar): Unit = {
+    optimisationMethod = new Minimisation(v)
+    optimisationMethodUpdated()
+  }
+
+  /**
+    * Maximize v
+    * @param v
+    */
+  def maximize(v: IntVar): Unit = {
+    optimisationMethod = new Minimisation(v)
+    optimisationMethodUpdated()
+  }
 }

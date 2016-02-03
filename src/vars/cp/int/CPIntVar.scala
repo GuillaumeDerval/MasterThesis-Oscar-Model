@@ -7,7 +7,15 @@ import vars.cp.CPVar
 import vars.domainstorage.int._
 import scala.util.Random
 
-class CPIntVar(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extends CPVar with IntVarImplem
+abstract class CPIntVar extends CPVar with IntVarImplem {
+  val realCPVar: oscar.cp.CPIntVar
+}
+
+object CPIntVar {
+  def apply(notInstantied: IntDomainStorage, store: oscar.cp.CPStore): CPIntVar = new CPIntVarImplem(notInstantied, store)
+}
+
+class CPIntVarImplem(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) extends CPIntVar
 {
   val realCPVar = {
     notInstantied match {
