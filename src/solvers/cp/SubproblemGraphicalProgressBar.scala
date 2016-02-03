@@ -71,7 +71,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private val instantMeanCPUTimePlotPoints = new XYSeries("Simple moving mean (size 10) (CPU)")
   private val exponentialMeanCPUTimePlotPoints = new XYSeries("Exp moving mean (0.1) (CPU)")
 
-  private val boundPlotPoints = new XYSeries("")
+  private val boundPlotPoints = new XYSeries("Bound Value")
 
   private val subproblemCPUTimeHistogram = new FixedBinsHistogramDataset("CPU", 50)
 
@@ -149,7 +149,6 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   chartPanel.add(meanTimeChartPanel)
   chartPanel.add(boundChartPanel)
   chartPanel.add(subproblemCPUTimeChartPanel)
-
   add(progressBar)
   add(chartPanel)
   add(statPanel)
@@ -282,6 +281,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
       errorChartPanel.setRangeZoomable(true)
 
       chartPanel.add(errorChartPanel)
+      chartPanel.updateUI()
     }
   }
 }
