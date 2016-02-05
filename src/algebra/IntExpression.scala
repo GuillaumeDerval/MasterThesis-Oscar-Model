@@ -73,12 +73,29 @@ trait IntExpression {
   def unary_- : IntExpression = new UnaryMinus(this)
   def unary_+ : IntExpression = this
   def unary_! : IntExpression = this != 1
+
+  def maxRegret(costs: Array[Int]): Int = {
+    val valuess = values().toSeq
+    var min1 = costs(valuess(0))
+    var min2 = Int.MaxValue
+    var i = valuess.length
+    while (i > 1) {
+      i -= 1
+      val value = valuess(i)
+      val cost = costs(value)
+      if (cost <= min1) {
+        min2 = min1
+        min1 = cost
+      } else if (cost < min2) min2 = cost
+    }
+    min2 - min1
+  }
 }
 
 object IntExpression
 {
   implicit def constant(v: Int): Constant = new Constant(v)
-  implicit def array_element[A <: IntExpression](v: Array[A]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.asInstanceOf[Array[IntExpression]])
+  implicit def array_element[A <% IntExpression](v: Array[A]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.asInstanceOf[Array[IntExpression]])
   implicit def array_element(v: Array[Int]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.map(new Constant(_)))
 
   class ArrayIntExpressionElementConstraintBuilder(val array: Array[IntExpression]) {

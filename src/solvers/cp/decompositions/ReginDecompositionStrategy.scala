@@ -12,6 +12,9 @@ import scala.collection.mutable
 class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.binaryFirstFail(_)) extends DecompositionStrategy
 {
   override def decompose(model: UninstantiatedModel, count: Integer): List[Map[IntVar, Int]] = {
+    if(count == 0) //no decomposition
+      return List(Map[IntVar,Int]())
+
     var nbSolutions = 1
     var retval: List[Map[IntVar, Int]] = null
     for(i <- 0 until vars.length) {

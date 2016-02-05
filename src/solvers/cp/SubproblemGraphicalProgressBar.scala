@@ -14,9 +14,13 @@ import org.jfree.data.xy.XYSeries
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.swing.Swing
+import scalation.analytics.ARMA
+import scalation.linalgebra.VectorD
+import scalation.plot.Plot
 
 /**
   * A GUI that shows various stats about a multithreaded solve
+  *
   * @param nbSubproblems
   * @param nbThreads
   * @tparam T
@@ -166,6 +170,49 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   }, 0, 100)
 
 
+  private var cpuTimeTakenVector: VectorD = new VectorD(Array[Double]())
+  private var wallTimeTakenVector: VectorD = new VectorD(Array[Double]())
+  private var timeVector: VectorD = new VectorD(Array[Double]())
+  private def computeARMAEstimation(): Unit = {
+    if(cpuTimeTakenVector.size == 1000) {
+      exportVectors()
+      /*val cpuARMA = new ARMA(cpuTimeTakenVector, timeVector)
+      //val wallARMA = new ARMA(wallTimeTakenVector, timeVector)
+
+      var t = timeVector
+      var y = cpuTimeTakenVector
+      /*val maxT = t(t.size-1)
+      val nbIncrements = 1000
+      for(i <- 0 until nbIncrements) {
+        t ++= i.toDouble * maxT / nbIncrements.toDouble
+        y ++ 0
+      }*/
+
+      val phi_a = cpuARMA.est_ar (1)
+      new Plot (t, y, cpuARMA.ar (phi_a) + cpuARMA.mu, "Plot of y, ar(1) vs. t")
+
+      val phi_b = cpuARMA.est_ar (2)
+      new Plot (t, y, cpuARMA.ar (phi_b) + cpuARMA.mu, "Plot of y, ar(2) vs. t")
+
+      val theta = cpuARMA.est_ma (1)                                       // FIX
+      new Plot (t, y, cpuARMA.ma (theta) + cpuARMA.mu, "Plot of y, ma(1) vs. t")*/
+    }
+
+  }
+
+  private def exportVectors(): Unit = {
+    val wall = wallTimeTakenVector.toSeq
+    val cpu = cpuTimeTakenVector.toSeq
+    val time = timeVector.toSeq
+
+    println("Wall")
+    println(wall.mkString("|"))
+    println("CPU")
+    println(cpu.mkString("|"))
+    println("Time")
+    println(time.mkString("|"))
+  }
+
   private def updateOnEDT(): Unit = {
     progressBar.setValue(subproblemsDone)
     subproblemStatus.setText("" + subproblemsDone + "/" + nbSubproblems)
@@ -211,6 +258,9 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     instantMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), instantMeanTime.get / math.pow(10, 9), false)
     exponentialMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), exponentialMeanTime.get / math.pow(10, 9), false)
 
+    wallTimeTakenVector ++= meanWallTime / math.pow(10, 9)
+    timeVector ++= lastElapsedWallTime / math.pow(10, 9)
+
     lastBound match {
       case Some(b) => boundPlotPoints.add(lastElapsedWallTime / math.pow(10, 9), b)
       case None =>
@@ -236,6 +286,10 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     subproblemsTotalCPUTime += timeTaken
     lastBound = currentBound
     updateTime()
+
+    cpuTimeTakenVector ++= timeTaken
+
+    computeARMAEstimation()
 
     Swing.onEDT {
       subproblemCPUTimeHistogram.addObservation(timeTaken / Math.pow(10, 9))

@@ -1,5 +1,7 @@
 package algebra
 
+import vars.IntVar
+
 import scala.collection.mutable.HashSet
 
 /**

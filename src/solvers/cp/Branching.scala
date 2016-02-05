@@ -50,4 +50,16 @@ object Branching{
     val vars = variables.toArray
     binaryFirstFailIdx(vars, i => valHeuris(vars(i)))
   }
+
+  def binaryLastConflict(variables: Array[IntVar]): Branching = {
+    binaryLastConflict(variables, variables(_).size, variables(_).min)
+  }
+
+  def binaryLastConflict(variables: Array[IntVar], varHeuristic: (Int => Int)): Branching = {
+    binaryLastConflict(variables, varHeuristic, variables(_).min)
+  }
+
+  def binaryLastConflict(variables: Array[IntVar], varHeuristic: (Int => Int), valHeuristic: (Int => Int)): Branching = {
+    new BinaryLastConflict(variables, varHeuristic, valHeuristic)
+  }
 }

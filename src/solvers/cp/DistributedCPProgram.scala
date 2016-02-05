@@ -117,26 +117,21 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
     override def run(): Unit = {
       val cpmodel = new InstantiatedCPModel(uninstantiatedModel)
       modelDeclaration.applyFuncOnModel(cpmodel) {
-        //if(onSolution != null)
-        //  cpmodel.cpSolver.onSolution {}
-        //else
-        //  cpmodel.cpSolver.onSolution {}
-
         val objv: IntVar = cpmodel.optimisationMethod match {
           case m: Minimisation => m.objective
           case m: Maximisation => m.objective
           case _ => null
         }
 
-        //val initialOnSolution: (Model => Unit) = (a) => outputQueue.add(SolutionMessage(onSolution(cpmodel)))
-        val initialOnSolution: (Model => Unit) = (a) => {}
+        val initialOnSolution: (Model => Unit) = (a) => outputQueue.add(SolutionMessage(onSolution(cpmodel)))
+        //val initialOnSolution: (Model => Unit) = (a) => {}
 
         val solution: Model => Unit = boundaryManager match {
           case Some(bm) => CPIntBoundaryUpdateSolutionWrapper(initialOnSolution, bm, objv)
           case None => initialOnSolution
         }
 
-        val search: oscar.algo.search.Branching =boundaryManager match {
+        val search: oscar.algo.search.Branching = boundaryManager match {
           case Some(bm) => new IntBoundaryUpdateSearchWrapper(getSearch(cpmodel), bm, cpmodel.cpObjective)
           case None => getSearch(cpmodel)
         }

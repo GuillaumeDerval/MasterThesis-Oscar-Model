@@ -30,7 +30,7 @@ class IntBoundaryUpdateSearchWrapper(original: oscar.algo.search.Branching,
   override def alternatives(): Seq[Branching.Alternative] = {
     original.alternatives().map((a: Branching.Alternative) => {
       () => {
-        cpobjective.updateBestBound(boundaryManager.get_boundary())
+        cpobjective.updateWorstBound(boundaryManager.get_boundary())
         cpobjective.best = boundaryManager.get_boundary()
         a()
       }
