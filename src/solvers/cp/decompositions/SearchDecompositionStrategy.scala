@@ -5,8 +5,9 @@ import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
 import oscar.cp.CPIntVar
-import solvers.cp.{Branching, SubproblemData}
+import solvers.cp.SubproblemData
 import oscar.cp.constraints.InSet
+import solvers.cp.branchings.Branching
 
 import scala.collection.mutable
 

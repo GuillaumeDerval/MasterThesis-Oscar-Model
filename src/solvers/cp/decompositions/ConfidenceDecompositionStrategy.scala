@@ -5,7 +5,8 @@ import models.NoOptimisation
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
-import solvers.cp.{Branching, SubproblemData}
+import solvers.cp.SubproblemData
+import solvers.cp.branchings.Branching
 import vars.IntVar
 
 import scala.collection.mutable

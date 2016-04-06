@@ -1,4 +1,4 @@
-package solvers.cp
+package solvers.cp.branchings
 
 import models.instantiated.InstantiatedCPModel
 import vars.IntVar

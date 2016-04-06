@@ -5,6 +5,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import constraints.Constraint
 import models.{Model, ModelDeclaration, SynchronizedIntBoundaryManager}
 import oscar.algo.search.SearchStatistics
+import solvers.cp.branchings.Branching
 
 trait Watcher[RetVal] {
   def startedSubproblem(spid: Int): Unit

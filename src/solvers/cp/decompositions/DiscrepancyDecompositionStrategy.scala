@@ -1,8 +1,8 @@
-package solvers.cp
+package solvers.cp.decompositions
 
 import models.instantiated.InstantiatedCPModel
 import models.uninstantiated.UninstantiatedModel
-import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy}
+import solvers.cp.SubproblemData
 import vars.IntVar
 
 /**

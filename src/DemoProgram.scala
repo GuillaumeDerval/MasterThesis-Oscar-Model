@@ -2,12 +2,13 @@ import algebra.Sum
 import constraints.AllDifferent
 import models.ModelDeclaration
 import solvers.cp._
-import solvers.cp.decompositions.{SearchDecompositionStrategy, ReginDecompositionStrategy}
+import solvers.cp.decompositions.{ReginDecompositionStrategy, SearchDecompositionStrategy}
 import vars.IntVar
 import algebra.IntExpression._
 import algebra.BoolExpression._
 import oscar.util.selectMin
-import solvers.cp.Branching.{noAlternative, branch}
+import solvers.cp.branchings.Branching.{branch, noAlternative}
+import solvers.cp.branchings.Branching
 
 import scala.io.Source
 

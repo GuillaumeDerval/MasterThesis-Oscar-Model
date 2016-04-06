@@ -1,6 +1,7 @@
 package solvers.cp
 
 import models.Model
+import solvers.cp.branchings.Branching
 import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy}
 
 /**

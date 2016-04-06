@@ -10,7 +10,8 @@ import oscar.algo
 import oscar.algo.search
 import oscar.cp.CPIntVar
 import oscar.cp.core.NoSolutionException
-import solvers.cp.{Branching, SubproblemData}
+import solvers.cp.SubproblemData
+import solvers.cp.branchings.Branching
 import vars.IntVar
 
 import scala.collection.mutable.PriorityQueue

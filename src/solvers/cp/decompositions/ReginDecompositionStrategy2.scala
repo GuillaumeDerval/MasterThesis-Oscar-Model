@@ -4,7 +4,8 @@ import constraints.Table
 import misc.{CartesianProduct, SubsetProduct}
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
-import solvers.cp.{Branching, SubproblemData}
+import solvers.cp.SubproblemData
+import solvers.cp.branchings.Branching
 import vars.IntVar
 
 import scala.collection.mutable

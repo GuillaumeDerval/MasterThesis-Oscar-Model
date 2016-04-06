@@ -1,8 +1,8 @@
 import constraints._
 import algebra.Sum
 import solvers.cp
-import solvers.cp.Branching
 import solvers.cp.LocalParallelCPProgram
+import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
 import vars.IntVar
 

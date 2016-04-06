@@ -2,7 +2,7 @@ package models
 
 import oscar.cp.CPIntVar
 import oscar.cp.constraints.CPObjectiveUnit
-import solvers.cp.Branching
+import solvers.cp.branchings.Branching
 import vars.IntVar
 
 trait OptimisationMethod
