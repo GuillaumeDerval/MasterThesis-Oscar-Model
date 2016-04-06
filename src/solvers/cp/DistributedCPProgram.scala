@@ -3,17 +3,19 @@ package solvers.cp
 import java.util
 
 import constraints.Constraint
-import solvers.cp.decompositions.DecompositionStrategy
+import oscar.cp.TightenType
+import solvers.cp.decompositions.{DecompositionStrategy, SubproblemData}
 
 import scala.util.Random
 import java.util.concurrent.LinkedBlockingQueue
 
 import models.instantiated.InstantiatedCPModel
 import misc.ComputeTimeTaken.computeTimeTaken
-import models.uninstantiated.UninstantiatedModel
+import models.uninstantiated.{ChildModel, UninstantiatedModel}
 import models._
 import vars.IntVar
 import misc.TimeHelper._
+import oscar.algo.search.SearchStatistics
 
 /**
   * Created by dervalguillaume on 5/11/15.
@@ -45,28 +47,31 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
 
   /**
     * Post a new constraint
+ *
     * @param constraint
     */
   def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
 
-  def solve(): Unit = solve(modelDeclaration.getCurrentModel)
+  def solve(): SearchStatistics = solve(modelDeclaration.getCurrentModel)
 
-  def solve(model: Model): Unit = {
+  def solve(model: Model): SearchStatistics = {
     model match {
       case m: UninstantiatedModel => solve(m)
       case _ => sys.error("The model is already instantiated")
     }
   }
 
-  def solve(model: UninstantiatedModel): Unit = {
+  def solve(model: UninstantiatedModel): SearchStatistics = {
 
-    val subproblems = computeTimeTaken("Decomposition"){Random.shuffle(getDecompositionStrategy.decompose(model, subproblemsCount))}
+    val subproblems = computeTimeTaken("Decomposition"){/*Random.shuffle(*/getDecompositionStrategy.decompose(model, subproblemsCount)/*)*/}
 
-    val queue = new LinkedBlockingQueue[(Map[IntVar, Int], Int)]()
+    println("Subproblems: "+subproblems.length.toString)
+
+    val queue = new LinkedBlockingQueue[((InstantiatedCPModel) => Unit, Int)]()
     val outputQueue = new LinkedBlockingQueue[ThreadMessage]()
 
     for (s <- subproblems.zipWithIndex)
-      queue.add(s)
+      queue.add((s._1._1, s._2))
 
     val boundaryManager:Option[SynchronizedIntBoundaryManager] = model.optimisationMethod match {
       case m: Minimisation => Some(new SynchronizedIntBoundaryManager(m.objective.max))
@@ -76,7 +81,11 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
 
     val threads = Array.tabulate(threadsToLaunch)(i => new Thread(new Subsolver(model, queue, outputQueue, boundaryManager)))
     val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, threadsToLaunch)
-    val watcher_thread = new Thread(new WatcherRunnable(pb, outputQueue, boundaryManager))
+    pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
+
+    val statWatcher = new StatisticsWatcher
+    val watchers = Array[Watcher[RetVal]](statWatcher, pb)
+    val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue, boundaryManager))
 
     watcher_thread.start()
     threads.foreach(_.start())
@@ -84,39 +93,78 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
     threads.foreach(_.join())
     outputQueue.add(AllDoneMessage())
     watcher_thread.join()
+    statWatcher.get
   }
 
   class ThreadMessage
   case class SolutionMessage(solution: RetVal) extends ThreadMessage
-  case class DoneMessage(spid: Int, timeTakenNS: Double) extends ThreadMessage
+  case class DoneMessage(spid: Int, timeTakenNS: Double, searchStats: SearchStatistics) extends ThreadMessage
   case class StartedMessage(spid: Int) extends ThreadMessage
   case class AllDoneMessage() extends ThreadMessage
 
-  class WatcherRunnable(watcher: Watcher[RetVal], outputQueue: LinkedBlockingQueue[ThreadMessage],
+  class WatcherRunnable(watchers: Iterable[Watcher[RetVal]], outputQueue: LinkedBlockingQueue[ThreadMessage],
                         boundaryManager: Option[SynchronizedIntBoundaryManager]) extends Runnable {
     override def run(): Unit = {
       var done = false
       while(!done) {
         outputQueue.take() match {
-          case SolutionMessage(solution) => watcher.newSolution(solution)
-          case DoneMessage(spid, newtimeTaken) => watcher.endedSubproblem(spid, newtimeTaken,
-            boundaryManager.map(_.get_boundary()))
-          case StartedMessage(spid) => watcher.startedSubproblem(spid)
+          case SolutionMessage(solution) => watchers.foreach(_.newSolution(solution, boundaryManager.map(_.get_boundary())))
+          case DoneMessage(spid, newtimeTaken, searchStats) => watchers.foreach(_.endedSubproblem(spid, newtimeTaken,
+            boundaryManager.map(_.get_boundary()), searchStats))
+          case StartedMessage(spid) => watchers.foreach(_.startedSubproblem(spid))
           case AllDoneMessage() =>
             done = true
-            watcher.allDone()
+            watchers.foreach(_.allDone())
         }
       }
     }
   }
 
+  class StatisticsWatcher extends Watcher[RetVal] {
+    var currentStatistics = new SearchStatistics(0, 0, 0, false, 0, 0, 0)
+    def get = currentStatistics
+    override def startedSubproblem(spid: Int): Unit = {}
+    override def newSolution(solution: RetVal, newBound: Option[Int]): Unit = {
+      currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes,
+        nFails = currentStatistics.nFails,
+        time = currentStatistics.time,
+        completed = false,
+        timeInTrail = currentStatistics.timeInTrail,
+        maxTrailSize = currentStatistics.maxTrailSize,
+        nSols = currentStatistics.nSols+1
+      )
+    }
+    override def allDone(): Unit = {
+      currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes,
+        nFails = currentStatistics.nFails,
+        time = currentStatistics.time,
+        completed = true,
+        timeInTrail = currentStatistics.timeInTrail,
+        maxTrailSize = currentStatistics.maxTrailSize,
+        nSols = currentStatistics.nSols
+      )
+    }
+    override def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int], searchStats: SearchStatistics): Unit = {
+      currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes+searchStats.nNodes,
+        nFails = currentStatistics.nFails+searchStats.nFails,
+        time = currentStatistics.time + searchStats.time,
+        completed = false,
+        timeInTrail = currentStatistics.timeInTrail+searchStats.timeInTrail,
+        maxTrailSize = Math.max(currentStatistics.maxTrailSize, searchStats.maxTrailSize),
+        nSols = currentStatistics.nSols
+      )
+    }
+  }
+
   class Subsolver(uninstantiatedModel: UninstantiatedModel,
-                  subproblemQueue: util.Queue[(Map[IntVar, Int], Int)],
+                  subproblemQueue: util.Queue[((InstantiatedCPModel) => Unit, Int)],
                   outputQueue: util.Queue[ThreadMessage],
                   boundaryManager: Option[SynchronizedIntBoundaryManager]) extends Runnable {
     override def run(): Unit = {
       val cpmodel = new InstantiatedCPModel(uninstantiatedModel)
       modelDeclaration.applyFuncOnModel(cpmodel) {
+        cpmodel.cpSolver.silent = true
+
         val objv: IntVar = cpmodel.optimisationMethod match {
           case m: Minimisation => m.objective
           case m: Maximisation => m.objective
@@ -131,14 +179,13 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
           case None => initialOnSolution
         }
 
+        //TODO: test without this
         val search: oscar.algo.search.Branching = boundaryManager match {
           case Some(bm) => new IntBoundaryUpdateSearchWrapper(getSearch(cpmodel), bm, cpmodel.cpObjective)
           case None => getSearch(cpmodel)
         }
+        //val search: oscar.algo.search.Branching = getSearch(cpmodel)
 
-        cpmodel.cpSolver.onSolution { solution(cpmodel) }
-
-        cpmodel.cpSolver.search(search)
 
         while (!subproblemQueue.isEmpty) {
           val t0 = getThreadCpuTime
@@ -146,13 +193,32 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
           if(todo != null) {
             val (sp, spid) = todo
             outputQueue.add(StartedMessage(spid))
-            cpmodel.cpSolver.startSubjectTo() {
-              for ((variable, value) <- sp) {
-                post(variable == value)
+            val info = cpmodel.cpSolver.startSubjectTo() {
+              cpmodel.cpObjective.tightenMode = TightenType.NoTighten
+              sp(cpmodel)
+              cpmodel.cpObjective.tightenMode = TightenType.StrongTighten
+              /*
+               * Note: this has to be made after the call to the selection function, because it may overwrite the search
+               * and the solution handling function AND may want to use the original status at decomposition
+               */
+              cpmodel.cpSolver.searchEngine.clearOnSolution()
+              cpmodel.cpSolver.onSolution { solution(cpmodel) }
+              cpmodel.cpSolver.search(search)
+
+              /*
+               * Set the current bound at start
+               */
+              boundaryManager match {
+                case Some(bm) => {
+                  cpmodel.cpObjective.updateWorstBound(bm.get_boundary())
+                  cpmodel.cpObjective.best = bm.get_boundary()
+                }
+                case None =>
               }
             }
+            cpmodel.cpSolver.searchEngine.clearOnSolution()
             val t1 = getThreadCpuTime
-            outputQueue.add(DoneMessage(spid, t1-t0))
+            outputQueue.add(DoneMessage(spid, t1-t0, info))
           }
         }
       }
@@ -162,7 +228,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DistributedCPSolve[
 
 trait Watcher[RetVal] {
   def startedSubproblem(spid: Int): Unit
-  def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int]): Unit
-  def newSolution(solution: RetVal): Unit
+  def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int], searchStats: SearchStatistics): Unit
+  def newSolution(solution: RetVal, newBound: Option[Int]): Unit
   def allDone(): Unit
 }

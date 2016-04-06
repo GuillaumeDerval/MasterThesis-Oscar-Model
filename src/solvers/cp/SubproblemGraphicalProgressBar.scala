@@ -6,17 +6,19 @@ import javax.swing._
 
 import misc.TimeHelper._
 import misc.{ExponentialMovingAverage, FixedBinsHistogramDataset, SimpleMovingAverage}
-import org.jfree.chart.plot.PlotOrientation
-import org.jfree.chart.{ChartFactory, ChartPanel}
+import org.jfree.chart.axis.{AxisLocation, NumberAxis}
+import org.jfree.chart.plot.{PlotOrientation, XYPlot}
+import org.jfree.chart.renderer.xy.{StandardXYItemRenderer, XYItemRenderer, XYLineAndShapeRenderer}
+import org.jfree.chart.{ChartFactory, ChartPanel, renderer}
 import org.jfree.data.xy
 import org.jfree.data.xy.XYSeries
+import org.jfree.util.ShapeUtilities
+import oscar.algo.search.SearchStatistics
+import solvers.cp.decompositions.SubproblemData
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.swing.Swing
-import scalation.analytics.ARMA
-import scalation.linalgebra.VectorD
-import scalation.plot.Plot
 
 /**
   * A GUI that shows various stats about a multithreaded solve
@@ -29,6 +31,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS))
 
   private val progressBar: JProgressBar = new JProgressBar(0, nbSubproblems)
+  private val progressBarCartProduct: JProgressBar = new JProgressBar(0, 100)
   private val subproblemStatus: JLabel = new JLabel("")
   private val cpuWallRatio: JLabel = new JLabel("")
   private val wallTimeRemaining: JLabel = new JLabel("")
@@ -42,7 +45,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private var startTime = 0.0
   def start(): Unit = startTime = getClockTime
 
-  private val timeStorage = new ArrayBuffer[(Double, Double, Double, Double)]
+  private val timeStorage = new ArrayBuffer[(Double, Double, Double, Double, Double)]
   private var solutionsFound = 0
 
   private var lastElapsedWallTime = 0.0
@@ -67,9 +70,12 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     CHARTS
    */
   private val totalWallTimePlotPoints = new XYSeries("Wall")
+  private val totalWallTimeCartCardPlotPoints = new XYSeries("Wall - Cart. Prod. Cardinality")
   private val totalCPUTimePlotPoints = new XYSeries("CPU")
   private val totalCPUTimeExpPlotPoints = new XYSeries("CPU (exp average)")
-
+  private val timeProblemPlotPoints = new XYSeries("Time")
+  private val ccProblemPlotPoints = new XYSeries("Cart. Prod. Cardinality")
+  private val minBoundProblemPlotPoints = new XYSeries("Min/Max Bound")
   private val meanWallTimePlotPoints = new XYSeries("Mean (Wall)")
   private val meanCPUTimePlotPoints = new XYSeries("Mean (CPU)")
   private val instantMeanCPUTimePlotPoints = new XYSeries("Simple moving mean (size 10) (CPU)")
@@ -82,7 +88,11 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   private val collectionTotal = new xy.XYSeriesCollection()
   private val collectionMean = new xy.XYSeriesCollection()
   private val collectionBound = new xy.XYSeriesCollection()
+  private val collectionProblem = new xy.XYSeriesCollection()
+  private val collectionProblemCC = new xy.XYSeriesCollection()
+  private val collectionProblemMMB = new xy.XYSeriesCollection()
   collectionTotal.addSeries(totalWallTimePlotPoints)
+  collectionTotal.addSeries(totalWallTimeCartCardPlotPoints)
   collectionTotal.addSeries(totalCPUTimePlotPoints)
   collectionTotal.addSeries(totalCPUTimeExpPlotPoints)
   
@@ -93,14 +103,41 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
 
   collectionBound.addSeries(boundPlotPoints)
 
+  collectionProblem.addSeries(timeProblemPlotPoints)
+  collectionProblemCC.addSeries(ccProblemPlotPoints)
+  collectionProblemMMB.addSeries(minBoundProblemPlotPoints)
+
   private val totalTimeChart = ChartFactory.createXYLineChart("", "Wall time", "Total time estimated",
     collectionTotal, PlotOrientation.VERTICAL, true, true, false)
   private val meanTimeChart = ChartFactory.createXYLineChart("", "Wall time", "Time taken per subproblem",
     collectionMean, PlotOrientation.VERTICAL, true, true, false)
   private val boundChart = ChartFactory.createXYLineChart("", "Wall time", "Bound value",
     collectionBound, PlotOrientation.VERTICAL, true, true, false)
+  private val problemDescriptionChart = ChartFactory.createScatterPlot("", "Problem ID", "Wall time taken",
+    collectionProblem, PlotOrientation.VERTICAL, true, true, false)
   private val subproblemCPUTimeChart = ChartFactory.createHistogram("", "CPU Time", "#",
     subproblemCPUTimeHistogram.getRealDataset, PlotOrientation.VERTICAL, true, true, false)
+
+
+  problemDescriptionChart.getXYPlot.getRenderer.setSeriesShape(0, ShapeUtilities.createDiamond(0.5f))
+  val renderer2 = new XYLineAndShapeRenderer(false, true)
+  val axis2 = new NumberAxis("Log of Cart. Prod. Cardinality")
+  axis2.setAutoRangeIncludesZero(false)
+  problemDescriptionChart.getXYPlot.setRangeAxisLocation(1, AxisLocation.BOTTOM_OR_RIGHT)
+  problemDescriptionChart.getXYPlot.setRangeAxis(1, axis2)
+  problemDescriptionChart.getXYPlot.setDataset(1, collectionProblemCC)
+  problemDescriptionChart.getXYPlot.setRenderer(1, renderer2)
+  problemDescriptionChart.getXYPlot.mapDatasetToRangeAxis(1, 1)
+  renderer2.setSeriesShape(0, ShapeUtilities.createDownTriangle(0.5f))
+  val renderer3 = new XYLineAndShapeRenderer(false, true)
+  val axis3 = new NumberAxis("Min/Max Bound subproblem value")
+  axis3.setAutoRangeIncludesZero(false)
+  problemDescriptionChart.getXYPlot.setRangeAxisLocation(2, AxisLocation.BOTTOM_OR_RIGHT)
+  problemDescriptionChart.getXYPlot.setRangeAxis(2, axis3)
+  problemDescriptionChart.getXYPlot.setDataset(2, collectionProblemMMB)
+  problemDescriptionChart.getXYPlot.setRenderer(2, renderer3)
+  problemDescriptionChart.getXYPlot.mapDatasetToRangeAxis(2, 2)
+  renderer3.setSeriesShape(0, ShapeUtilities.createUpTriangle(0.5f))
 
   totalTimeChart.setBackgroundPaint(new Color(255, 255, 255, 0))
   totalTimeChart.setBackgroundImageAlpha(0.0f)
@@ -108,23 +145,36 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   meanTimeChart.setBackgroundImageAlpha(0.0f)
   boundChart.setBackgroundPaint(new Color(255, 255, 255, 0))
   boundChart.setBackgroundImageAlpha(0.0f)
+  problemDescriptionChart.setBackgroundPaint(new Color(255, 255, 255, 0))
+  problemDescriptionChart.setBackgroundImageAlpha(0.0f)
   subproblemCPUTimeChart.setBackgroundPaint(new Color(255, 255, 255, 0))
   subproblemCPUTimeChart.setBackgroundImageAlpha(0.0f)
 
   private val totalTimeChartPanel: ChartPanel = new ChartPanel(totalTimeChart)
-  totalTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
+  //totalTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
   private val meanTimeChartPanel: ChartPanel = new ChartPanel(meanTimeChart)
-  meanTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
+  //meanTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
   private val boundChartPanel: ChartPanel = new ChartPanel(boundChart)
-  boundChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
+  //boundChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
+  private val problemDescriptionChartPanel: ChartPanel = new ChartPanel(problemDescriptionChart)
+  //problemDescriptionChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
   private val subproblemCPUTimeChartPanel: ChartPanel = new ChartPanel(subproblemCPUTimeChart)
-  subproblemCPUTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
+  //subproblemCPUTimeChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
 
   /*
     INITIALISE GUI
    */
   progressBar.setValue(0)
   progressBar.setStringPainted(true)
+  progressBarCartProduct.setValue(0)
+  progressBarCartProduct.setStringPainted(true)
+
+  private val barPanel = new JPanel(new GridLayout(2, 2))
+  barPanel.add(new JLabel("Subproblems done", SwingConstants.CENTER))
+  barPanel.add(new JLabel("Search space explored", SwingConstants.CENTER))
+  barPanel.add(progressBar)
+
+  barPanel.add(progressBarCartProduct)
 
   private val timePanel = new JPanel(new GridLayout(0, 3))
   timePanel.add(new JLabel("", SwingConstants.LEFT))
@@ -148,13 +198,23 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   statPanel.add(new JLabel("CPU/Wall ratio: ", SwingConstants.LEFT))
   statPanel.add(cpuWallRatio)
 
-  private val chartPanel = new JPanel(new GridLayout(2, 3))
+  private val tabbedPane = new JTabbedPane()
+  tabbedPane.addTab("Total time estimation", null, totalTimeChartPanel, "Display a graph of the total time estimation")
+  tabbedPane.addTab("Mean time estimation", null, meanTimeChartPanel, "Display a graph of the mean time estimation")
+  tabbedPane.addTab("Bound value", null, boundChartPanel, "Display a graph of the evolution of the bound")
+  tabbedPane.addTab("CPU time histogram", null, subproblemCPUTimeChartPanel, "Display an histogram of the time taken by subproblem")
+  tabbedPane.addTab("Problem description", null, problemDescriptionChartPanel, "Display a graph showing some data about the subproblems")
+
+  /*private val chartPanel = new JPanel(new GridLayout(2, 3))
   chartPanel.add(totalTimeChartPanel)
   chartPanel.add(meanTimeChartPanel)
   chartPanel.add(boundChartPanel)
   chartPanel.add(subproblemCPUTimeChartPanel)
-  add(progressBar)
-  add(chartPanel)
+  chartPanel.add(problemDescriptionChartPanel)*/
+
+  add(barPanel)
+  //add(chartPanel)
+  add(tabbedPane)
   add(statPanel)
   add(timePanel)
 
@@ -169,52 +229,29 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     }
   }, 0, 100)
 
+  //C is for Corrected: we divide all values by max(cartesian product log) to have more sustainable values in memory
+  var cartesianProductCSum: Double = 0
+  var cartesianProductC: Array[Double] = null
+  var cartesianProductCCurrent: Double = 0
 
-  private var cpuTimeTakenVector: VectorD = new VectorD(Array[Double]())
-  private var wallTimeTakenVector: VectorD = new VectorD(Array[Double]())
-  private var timeVector: VectorD = new VectorD(Array[Double]())
-  private def computeARMAEstimation(): Unit = {
-    if(cpuTimeTakenVector.size == 1000) {
-      exportVectors()
-      /*val cpuARMA = new ARMA(cpuTimeTakenVector, timeVector)
-      //val wallARMA = new ARMA(wallTimeTakenVector, timeVector)
-
-      var t = timeVector
-      var y = cpuTimeTakenVector
-      /*val maxT = t(t.size-1)
-      val nbIncrements = 1000
-      for(i <- 0 until nbIncrements) {
-        t ++= i.toDouble * maxT / nbIncrements.toDouble
-        y ++ 0
-      }*/
-
-      val phi_a = cpuARMA.est_ar (1)
-      new Plot (t, y, cpuARMA.ar (phi_a) + cpuARMA.mu, "Plot of y, ar(1) vs. t")
-
-      val phi_b = cpuARMA.est_ar (2)
-      new Plot (t, y, cpuARMA.ar (phi_b) + cpuARMA.mu, "Plot of y, ar(2) vs. t")
-
-      val theta = cpuARMA.est_ma (1)                                       // FIX
-      new Plot (t, y, cpuARMA.ma (theta) + cpuARMA.mu, "Plot of y, ma(1) vs. t")*/
+  def setSubproblemsData(cc: Iterable[(Int, SubproblemData)]) = {
+    Swing.onEDT {
+      for ((i, j) <- cc) {
+        ccProblemPlotPoints.add(i, j.cartesianProductLog)
+        minBoundProblemPlotPoints.add(i, j.discrepancy)
+      }
     }
 
-  }
-
-  private def exportVectors(): Unit = {
-    val wall = wallTimeTakenVector.toSeq
-    val cpu = cpuTimeTakenVector.toSeq
-    val time = timeVector.toSeq
-
-    println("Wall")
-    println(wall.mkString("|"))
-    println("CPU")
-    println(cpu.mkString("|"))
-    println("Time")
-    println(time.mkString("|"))
+    val cartesianProductLogMax = cc.map(v => v._2.cartesianProductLog).max
+    cartesianProductC = cc.map(v => Math.exp(v._2.cartesianProductLog-cartesianProductLogMax)).toArray
+    cartesianProductCSum = cartesianProductC.foldLeft(0.0d)((current, v) => current + v)
+    cartesianProductCCurrent = 0
   }
 
   private def updateOnEDT(): Unit = {
     progressBar.setValue(subproblemsDone)
+    progressBarCartProduct.setValue(Math.round(100.0*cartesianProductCCurrent/cartesianProductCSum).toInt)
+
     subproblemStatus.setText("" + subproblemsDone + "/" + nbSubproblems)
     solutionsFoundLabel.setText(solutionsFound.toString)
 
@@ -229,6 +266,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     cpuWallRatio.setText(round1000(lastElapsedCPUTime / lastElapsedWallTime).toString)
 
     totalWallTimePlotPoints.fireSeriesChanged()
+    totalWallTimeCartCardPlotPoints.fireSeriesChanged()
     totalCPUTimePlotPoints.fireSeriesChanged()
     totalCPUTimeExpPlotPoints.fireSeriesChanged()
     meanWallTimePlotPoints.fireSeriesChanged()
@@ -258,15 +296,17 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     instantMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), instantMeanTime.get / math.pow(10, 9), false)
     exponentialMeanCPUTimePlotPoints.add(lastElapsedWallTime / math.pow(10, 9), exponentialMeanTime.get / math.pow(10, 9), false)
 
-    wallTimeTakenVector ++= meanWallTime / math.pow(10, 9)
-    timeVector ++= lastElapsedWallTime / math.pow(10, 9)
+    //Estimation with Cartesian Product Cardinality
+    //println(cartesianProductCCurrent/cartesianProductCSum)
+    val cpTotalTime = (lastElapsedWallTime/math.pow(10, 9))*cartesianProductCSum/cartesianProductCCurrent
+    totalWallTimeCartCardPlotPoints.add(lastElapsedWallTime / math.pow(10, 9), cpTotalTime)
 
     lastBound match {
       case Some(b) => boundPlotPoints.add(lastElapsedWallTime / math.pow(10, 9), b)
       case None =>
     }
 
-    timeStorage += ((lastElapsedWallTime, lastRemainingWallTime, lastElapsedCPUTime, lastRemainingCPUTime))
+    timeStorage += ((lastElapsedWallTime, lastRemainingWallTime, lastElapsedCPUTime, lastRemainingCPUTime, cpTotalTime*math.pow(10, 9)))
   }
 
   override def startedSubproblem(spid: Int): Unit = {
@@ -274,10 +314,22 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     subproblemsResolving += spid
   }
 
-  override def newSolution(solution: T): Unit = solutionsFound += 1
+  override def newSolution(solution: T, newBound: Option[Int]): Unit = {
+    solutionsFound += 1
+    lastElapsedWallTime = getClockTime - startTime
+    lastBound = newBound
+    lastBound match {
+      case Some(b) => boundPlotPoints.add(lastElapsedWallTime / math.pow(10, 9), b)
+        println("-----------------")
+        println("SOLUTION IMPROVED")
+        println((lastElapsedWallTime / math.pow(10, 9)).toString + "\t" + b)
+        println("-----------------")
+      case None =>
+    }
+  }
 
 
-  override def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int]): Unit = {
+  override def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int], ss: SearchStatistics): Unit = {
     subproblemsTime(spid) = timeTaken
     subproblemsResolving -= spid
     subproblemsDone += 1
@@ -285,13 +337,11 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
     exponentialMeanTime.update(timeTaken)
     subproblemsTotalCPUTime += timeTaken
     lastBound = currentBound
+    cartesianProductCCurrent += cartesianProductC(spid)
     updateTime()
 
-    cpuTimeTakenVector ++= timeTaken
-
-    computeARMAEstimation()
-
     Swing.onEDT {
+      timeProblemPlotPoints.add(spid, timeTaken / Math.pow(10, 9))
       subproblemCPUTimeHistogram.addObservation(timeTaken / Math.pow(10, 9))
     }
   }
@@ -304,21 +354,24 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
       subproblemCPUTimeHistogram.reinit()
 
       val errorTotalWallTime = new XYSeries("Total wall time error")
+      val errorTotalCPCWallTime = new XYSeries("Total cart. prod. cardinality wall time error")
       val errorTotalCPUTime = new XYSeries("Total CPU time error")
       val errorRemainingWallTime = new XYSeries("Remaining wall time error")
       val errorRemainingCPUTime = new XYSeries("Remaining CPU time error")
 
       val collectionError = new xy.XYSeriesCollection()
       collectionError.addSeries(errorTotalWallTime)
+      collectionError.addSeries(errorTotalCPCWallTime)
       collectionError.addSeries(errorTotalCPUTime)
       collectionError.addSeries(errorRemainingWallTime)
       collectionError.addSeries(errorRemainingCPUTime)
 
-      for ((ewall, rwall, ecpu, rcpu) <- timeStorage) {
+      for ((ewall, rwall, ecpu, rcpu, cpTotalTime) <- timeStorage) {
         val twall = ewall + rwall
         val tcpu = ecpu + rcpu
         val t = ewall / math.pow(10, 9)
         errorTotalWallTime.add(t, 100.0 * math.abs((totalWallTime - twall) / totalWallTime))
+        errorTotalCPCWallTime.add(t, 100.0 * math.abs((totalWallTime - cpTotalTime) / totalWallTime))
         errorTotalCPUTime.add(t, 100.0 * math.abs((totalCPUTime - tcpu) / totalCPUTime))
         errorRemainingWallTime.add(t, 100.0 * math.abs(((totalWallTime - ewall) - rwall) / (totalWallTime - ewall)))
         errorRemainingCPUTime.add(t, 100.0 * math.abs(((totalCPUTime - ecpu) - rcpu) / (totalCPUTime - ecpu)))
@@ -334,8 +387,11 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
       errorChartPanel.setPreferredSize(new java.awt.Dimension(560, 367))
       errorChartPanel.setRangeZoomable(true)
 
-      chartPanel.add(errorChartPanel)
-      chartPanel.updateUI()
+      tabbedPane.addTab("Time estimation error", null, errorChartPanel, "Display a graph showing the evolution of the error")
+      tabbedPane.updateUI()
+      //chartPanel.add(errorChartPanel)
+      //chartPanel.updateUI()
+      timer.cancel()
     }
   }
 }

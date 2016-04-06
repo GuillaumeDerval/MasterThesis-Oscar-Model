@@ -72,6 +72,16 @@ class UnionFindStorage[StoredType](private val array: ArrayBuffer[Elem[StoredTyp
    * @return
    */
   def size: Int = array.size
+
+  /**
+    * Iterate on the values really existing in this UF.
+    * The first value of the tuple is the internal id of the StoredType.
+    * @param f
+    */
+  def foreach(f : ((Int, StoredType)) => Unit) : Unit = {
+    for((elem, idx) <- array.zipWithIndex; if elem.isInstanceOf[ElemMain[StoredType]])
+        f((idx, elem.asInstanceOf[ElemMain[StoredType]].getContent))
+  }
 }
 
 private abstract class Elem[StoredType](val pos: Int) {

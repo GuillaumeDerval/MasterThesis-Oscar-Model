@@ -62,4 +62,20 @@ object Branching{
   def binaryLastConflict(variables: Array[IntVar], varHeuristic: (Int => Int), valHeuristic: (Int => Int)): Branching = {
     new BinaryLastConflict(variables, varHeuristic, valHeuristic)
   }
+
+  def naryStatic(variables: Array[IntVar]): Branching = {
+    new NaryStaticBranching(variables)
+  }
+
+  /**
+    * Binary Search on the decision variables vars with fixed static ordering.
+    * The next variable to assign is the first unbound variable in vars.
+    * @param vars: the array of variables to assign during the search
+    * @param valHeuris: gives the value v to try on left branch for the chosen variable, this value is removed on the right branch
+    */
+  def binaryStaticIdx(vars: Seq[IntVar], valHeuris: Int => Int): Branching = new BinaryStaticOrderBranching(vars.toArray, valHeuris)
+
+  def binaryStatic(vars: Seq[IntVar], valHeuris: (IntVar => Int)): Branching = new BinaryStaticOrderBranching(vars.toArray, i => valHeuris(vars(i)))
+
+  def binaryStatic(vars: Seq[IntVar]): Branching = binaryStatic(vars, (x: IntVar) => x.min)
 }

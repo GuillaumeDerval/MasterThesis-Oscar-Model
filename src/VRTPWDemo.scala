@@ -1,8 +1,9 @@
-import constraints.{BinPacking, MinAssignment, Circuit, Inverse}
+import constraints._
 import algebra.Sum
+import solvers.cp
 import solvers.cp.Branching
 import solvers.cp.DistributedCPProgram
-import solvers.cp.decompositions.ReginDecompositionStrategy
+import solvers.cp.decompositions._
 import vars.IntVar
 
 //import oscar.visual.VisualFrame
@@ -11,9 +12,118 @@ import vars.IntVar
 import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
 
+/*
+object GolombRulerGecode extends CPModel with App {
+  def increasing(y: Array[CPIntVar]) = {
+    for (i <- 1 until y.length) {
+      add(y(i - 1) < y(i), Strong)
+    }
+  }
+
+  var n = 12
+  if (args.length > 0) {
+    n = args(0).toInt
+  }
+
+  val m = Array.fill(n)(CPIntVar(0 until 1 << (n - 1)))
+
+  // Assume first mark to be zero
+  add(m(0) == 0)
+
+  // Order marks
+  increasing(m)
+
+  // Number of marks and differences
+  val n_d = (n*n-n)/2
+
+  // Array of differences
+  val d = Array.ofDim[CPIntVar](n_d)
+
+  var k = 0
+  for(i <- 0 until n-1) {
+    for(j <- i+1 until n) {
+      d(k) = m(j)-m(i)
+      add(d(k) >= ((j-i)*(j-i+1)/2))
+      k += 1
+    }
+  }
+
+  println(k)
+  println(n_d)
+  add(allDifferent(d), Strong)
+
+  if (n > 2)
+    add(d(0) < d(n_d-1))
+
+  minimize(m(n-1))
+
+  search {
+    binaryStatic(m)
+  }
+
+  onSolution {
+    println("\nSolution:")
+    print("mark: " + m.mkString(","))
+    println("\ndifferences: " + d.mkString(","))
+    println()
+  }
+  println(start())
+}
+ */
+object GolombRuler extends DistributedCPProgram[String] with App {
+  def increasing(y: Array[IntVar]) = {
+    for (i <- 1 until y.length) {
+      post(y(i - 1) < y(i))
+    }
+  }
+  var n = Integer.parseInt(args(0))
+  this.threadsToLaunch=Integer.parseInt(args(1))
+  this.subproblemsCount = Integer.parseInt(args(2))
+
+  val m = Array.fill(n)(IntVar(0,(1 << (n - 1))-1))
+
+  post(m(0) == 0)
+
+  increasing(m)
+
+  // Number of marks and differences
+  val n_d = (n*n-n)/2
+
+  // Array of differences
+  val d = Array.ofDim[IntVar](n_d)
+
+  var k = 0
+  for(i <- 0 until n-1) {
+    for(j <- i+1 until n) {
+      d(k) = (m(j)-m(i)).reify()
+      post(d(k) >= ((j-i)*(j-i+1)/2))
+      k += 1
+    }
+  }
+
+  post(AllDifferent(d))
+
+  if (n > 2)
+    post(d(0) < d(n_d-1))
+
+  this.modelDeclaration.minimize(m(n - 1))
+
+  setSearch {
+    Branching.binaryStatic(m)
+  }
+
+  post(m(n-1) < 120)
+
+  onSolution {
+    ""
+  }
+
+  setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
+  println(solve())
+}
 
 /** @author Renaud Hartert ren.hartert@gmail.com */
-object VRPTW  extends DistributedCPProgram[String] with App {
+object VRPTW  extends cp.DistributedCPProgram[String] with App {
   this.subproblemsCount = 1000
 
   val instanceFile = "C102.txt"
@@ -98,7 +208,7 @@ object VRPTW  extends DistributedCPProgram[String] with App {
 
   //val visu = new VisualVRPTW(coordinates, succ, vehicles)
 
-  setDecompositionStrategy(new ReginDecompositionStrategy(vehicles))
+  setDecompositionStrategy(new ReginDecompositionStrategy(pred))
 
   onSolution {
     println(totalDistance)

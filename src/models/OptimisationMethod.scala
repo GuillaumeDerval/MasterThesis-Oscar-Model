@@ -7,9 +7,9 @@ import vars.IntVar
 
 trait OptimisationMethod
 
-class Maximisation(val objective: IntVar) extends OptimisationMethod
-class Minimisation(val objective: IntVar) extends OptimisationMethod
-class NoOptimisation extends  OptimisationMethod
+case class Maximisation(val objective: IntVar) extends OptimisationMethod
+case class Minimisation(val objective: IntVar) extends OptimisationMethod
+case class NoOptimisation() extends  OptimisationMethod
 
 trait BoundaryManager {
   type B

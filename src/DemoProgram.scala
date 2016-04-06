@@ -2,7 +2,7 @@ import algebra.Sum
 import constraints.AllDifferent
 import models.ModelDeclaration
 import solvers.cp._
-import solvers.cp.decompositions.ReginDecompositionStrategy
+import solvers.cp.decompositions.{SearchDecompositionStrategy, ReginDecompositionStrategy}
 import vars.IntVar
 import algebra.IntExpression._
 import algebra.BoolExpression._
@@ -35,7 +35,8 @@ class DemoNQueens extends ModelDeclaration with DistributedCPSolve[String] /*CPS
   minimize(toMin)
 
   //setDecompositionStrategy(new NoDecompositionStrategy)
-  setDecompositionStrategy(new ReginDecompositionStrategy(queens))
+  //setDecompositionStrategy(new ReginDecompositionStrategy(queens))
+  setDecompositionStrategy(new SearchDecompositionStrategy(Branching.binaryFirstFail(queens.splitAt(4)._1)))
 }
 
 /*class ATSP extends ModelDeclaration with DistributedCPSolve[String] {
@@ -72,7 +73,7 @@ class DemoNQueens extends ModelDeclaration with DistributedCPSolve[String] /*CPS
 }*/
 
 object DemoDistribute extends DistributedCPProgram(new DemoNQueens()) with App {
-  this.subproblemsCount = 10000 //20
+  this.subproblemsCount = 1000 //20
   //this.subproblemsCount = 1
   this.threadsToLaunch = 3
   val t0 = System.nanoTime()
