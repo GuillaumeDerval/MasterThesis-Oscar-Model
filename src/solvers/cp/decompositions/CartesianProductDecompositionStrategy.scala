@@ -10,14 +10,14 @@ import oscar.algo
 import oscar.algo.search
 import oscar.cp.CPIntVar
 import oscar.cp.core.NoSolutionException
-import solvers.cp.Branching
+import solvers.cp.{Branching, SubproblemData}
 import vars.IntVar
 
 import scala.collection.mutable.PriorityQueue
 import scala.collection.mutable
 import scala.util.Random
 
-class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Branching) extends DecompositionStrategy {
+class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Branching) extends ClosureDecompositionStrategy {
 
   def this(allVars: Array[IntVar], decompVars: Array[IntVar]) = this(allVars, Branching.naryStatic(decompVars))
   def this(allVars: Array[IntVar]) = this(allVars, allVars)
@@ -104,7 +104,7 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
   }
 }
 
-class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) extends DecompositionStrategy {
+class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) extends ClosureDecompositionStrategy {
 
   class SubproblemInfo(val assignment: List[(IntVar, Int)], val cartesianProduct: Double, val path: List[Int]) extends Ordered[SubproblemInfo] {
     override def compare(that: SubproblemInfo): Int = cartesianProduct.compare(that.cartesianProduct)

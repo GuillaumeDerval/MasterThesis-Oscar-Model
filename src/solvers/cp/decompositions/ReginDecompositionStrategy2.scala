@@ -4,16 +4,16 @@ import constraints.Table
 import misc.{CartesianProduct, SubsetProduct}
 import models.operators.CPInstantiate
 import models.uninstantiated.UninstantiatedModel
-import solvers.cp.Branching
+import solvers.cp.{Branching, SubproblemData}
 import vars.IntVar
 
 import scala.collection.mutable
 
-class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends SimpleDecompositionStrategy
+class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends DecompositionStrategy
 {
   val varsSize = vars.map(i => i.values().size)
 
-  override def decomposeToMap(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)] = {
+  override def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)] = {
     var nbSolutions = 1
     var retval: List[(Map[IntVar, Int],SubproblemData)] = null
     val currentlySelected = new mutable.HashSet[Int]

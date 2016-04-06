@@ -11,7 +11,7 @@ import solvers.cp.Branching.{noAlternative, branch}
 
 import scala.io.Source
 
-class DemoNQueens extends ModelDeclaration with DistributedCPSolve[String] /*CPSolve*/ {
+class DemoNQueens extends ModelDeclaration with LocalDecomposedCPSolve[String] {
   val nQueens = 16 // Number of queens
   val Queens = 0 until nQueens
 
@@ -72,7 +72,7 @@ class DemoNQueens extends ModelDeclaration with DistributedCPSolve[String] /*CPS
   setDecompositionStrategy(new ReginDecompositionStrategy(succ))
 }*/
 
-object DemoDistribute extends DistributedCPProgram(new DemoNQueens()) with App {
+object DemoDistribute extends LocalParallelCPProgram(new DemoNQueens()) with App {
   this.subproblemsCount = 1000 //20
   //this.subproblemsCount = 1
   this.threadsToLaunch = 3
@@ -84,7 +84,7 @@ object DemoDistribute extends DistributedCPProgram(new DemoNQueens()) with App {
   println("Elapsed time: " + elapsed + "s")
 }
 
-class DemoDistributedModel extends ModelDeclaration with CPSolve {
+class DemoDistributedModel extends ModelDeclaration with CPSolve[Unit] {
   val s = IntVar(0, 9)
   val e = IntVar(0, 9)
   val n = IntVar(0, 9)

@@ -2,23 +2,49 @@ package solvers.cp.decompositions
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import models._
 import models.instantiated.InstantiatedCPModel
 import models.uninstantiated.UninstantiatedModel
+import solvers.cp.SubproblemData
 import vars.IntVar
 
 /**
-  * Created by dervalguillaume on 6/11/15.
+  * Decomposition strategy that uses assignations as decompositions
+  * Simple to share among multiple machines
   */
 trait DecompositionStrategy {
+  /**
+    * Decompose the problem
+    * @param model the model to decompose
+    * @param count the (minimum) number of subproblems wanted
+    * @return A list of assignation to variable that makes the subproblem, along with the associated SubproblemData
+    */
+  def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)]
+}
+
+
+/**
+  * Decomposition strategy that uses closures at decompositions;
+  * can only be used in the same JVM, so only for locally parallelized processes
+  */
+trait ClosureDecompositionStrategy {
+  /**
+    * Decompose the problem
+    * @param model the model to decompose
+    * @param count the (minimum) number of subproblems wanted
+    * @return A list of closure (to be applied on a child model) that gives
+    *         the wanted subproblem, and the SubproblemData object associated
+    */
   def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)]
 }
 
-trait SimpleDecompositionStrategy extends DecompositionStrategy{
-  def decomposeToMap(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)]
 
+/**
+  * Convert a DecompositionStrategy to a ClosureDecompositionStrategy
+  * @param sub the DecompositionStrategy to transform
+  */
+class DecompositionStrategyToClosureConverter(sub: DecompositionStrategy) extends ClosureDecompositionStrategy{
   def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
-    val l = decomposeToMap(model, count)
+    val l = sub.decompose(model, count)
     l.map((m) => {
       ((instantiated_model: InstantiatedCPModel) => {
         for ((variable, value) <- m._1) {
@@ -29,25 +55,11 @@ trait SimpleDecompositionStrategy extends DecompositionStrategy{
   }
 }
 
-class DiscrepancyDecompositionStrategy(val sub: DecompositionStrategy) extends DecompositionStrategy {
-  def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
-    sub.decompose(model, count).sortBy(_._2.discrepancy)
-  }
-}
-
-class SubproblemData(val cartesianProductLog: Double, val minBound: Int, val discrepancy: Int)
-{
-  def this(cartesianProductLog: Double, optimisationMethod: OptimisationMethod, discrepancy: Int = -1) = this(cartesianProductLog,
-    optimisationMethod match {
-      case Maximisation(v) =>
-        v.max
-      case Minimisation(v) =>
-        v.min
-      case NoOptimisation() =>
-        0
-    }, discrepancy)
-
-  def this(cartesianProductLog: Double, minBound: Int) = this(cartesianProductLog, minBound, -1)
+/**
+  * An object that contains an implicit that converts from DecompositionStrategy to ClosureDecompositionStrategy
+  */
+object DecompositionStrategyToClosureConverter {
+  implicit def convert(sub: DecompositionStrategy): ClosureDecompositionStrategy = new DecompositionStrategyToClosureConverter(sub)
 }
 
 class SubproblemQueue(orignal_list: List[((InstantiatedCPModel) => Unit, SubproblemData)], maximisation: Boolean) {

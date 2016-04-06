@@ -5,14 +5,14 @@ import misc.CartesianProduct
 import models.NoOptimisation
 import models.operators.CPInstantiate
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
-import solvers.cp.Branching
+import solvers.cp.{Branching, SubproblemData}
 import vars.IntVar
 
 import scala.collection.mutable
 
-class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends SimpleDecompositionStrategy
+class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends DecompositionStrategy
 {
-  override def decomposeToMap(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int], SubproblemData)] = {
+  override def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int], SubproblemData)] = {
     if(count == 0) //no decomposition
       return List((Map[IntVar,Int](), new SubproblemData(CartesianProduct.computeLog(vars), model.optimisationMethod)))
 

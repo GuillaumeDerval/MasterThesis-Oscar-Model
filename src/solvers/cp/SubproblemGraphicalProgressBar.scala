@@ -14,7 +14,6 @@ import org.jfree.data.xy
 import org.jfree.data.xy.XYSeries
 import org.jfree.util.ShapeUtilities
 import oscar.algo.search.SearchStatistics
-import solvers.cp.decompositions.SubproblemData
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

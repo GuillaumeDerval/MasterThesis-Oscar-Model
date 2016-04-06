@@ -13,19 +13,10 @@ import models.uninstantiated.UninstantiatedModel
  * search defined inside will be used if none is currently defined. The same goes 
  * for onSolution with SolutionManager/CPSearch
  */
-class CPProgram(md: ModelDeclaration with CPSolve = new ModelDeclaration() with CPSolve) {
+class CPProgram[RetVal](md: ModelDeclaration with CPSolve[RetVal] = new ModelDeclaration() with CPSolve[RetVal])
+  extends ModelProxy[CPSolve[RetVal], RetVal](md)
+{
   implicit val program = this
-  implicit val modelDeclaration = md
-
-  def getDeclaredModel = modelDeclaration.getDeclaredModel
-  def getCurrentModel = modelDeclaration.getCurrentModel
-
-  def getSearch = md.getSearch
-  def setSearch(b: Branching): Unit = md.setSearch(b)
-  def setSearch(b: => Seq[oscar.algo.search.Alternative]): Unit = md.setSearch(b)
-  def onSolution = md.onSolution
-  def onSolution(s: => Unit): Unit = md.onSolution(s)
-  def onSolution(o: Model => Unit): Unit = md.onSolution(o)
 
   def solve(): Unit = solve(modelDeclaration.getCurrentModel)
 
@@ -52,10 +43,4 @@ class CPProgram(md: ModelDeclaration with CPSolve = new ModelDeclaration() with 
       println(model.cpSolver.start())
     }
   }
-
-  /**
-    * Post a new constraint
-    * @param constraint
-    */
-  def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
 }

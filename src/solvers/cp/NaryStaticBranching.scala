@@ -1,9 +1,7 @@
 package solvers.cp
 
 import models.instantiated.InstantiatedCPModel
-import oscar.algo.reversible.ReversibleInt
 import oscar.algo.search
-import oscar.algo.search.Branching
 import oscar.cp._
 import oscar.cp.searches.Decision
 import vars.IntVar

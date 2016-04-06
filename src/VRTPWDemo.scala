@@ -2,7 +2,7 @@ import constraints._
 import algebra.Sum
 import solvers.cp
 import solvers.cp.Branching
-import solvers.cp.DistributedCPProgram
+import solvers.cp.LocalParallelCPProgram
 import solvers.cp.decompositions._
 import vars.IntVar
 
@@ -70,7 +70,7 @@ object GolombRulerGecode extends CPModel with App {
   println(start())
 }
  */
-object GolombRuler extends DistributedCPProgram[String] with App {
+object GolombRuler extends LocalParallelCPProgram[String] with App {
   def increasing(y: Array[IntVar]) = {
     for (i <- 1 until y.length) {
       post(y(i - 1) < y(i))
@@ -123,7 +123,7 @@ object GolombRuler extends DistributedCPProgram[String] with App {
 }
 
 /** @author Renaud Hartert ren.hartert@gmail.com */
-object VRPTW  extends cp.DistributedCPProgram[String] with App {
+object VRPTW  extends cp.LocalParallelCPProgram[String] with App {
   this.subproblemsCount = 1000
 
   val instanceFile = "C102.txt"

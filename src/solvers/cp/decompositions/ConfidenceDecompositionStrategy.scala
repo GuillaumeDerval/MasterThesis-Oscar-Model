@@ -5,12 +5,12 @@ import models.NoOptimisation
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
-import solvers.cp.Branching
+import solvers.cp.{Branching, SubproblemData}
 import vars.IntVar
 
 import scala.collection.mutable
 
-class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching, confidence: Double) extends DecompositionStrategy {
+class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching, confidence: Double) extends ClosureDecompositionStrategy {
 
   def this(allVars: Array[IntVar], decompVars: Array[IntVar], confidence: Double) = this(allVars, Branching.naryStatic(decompVars), confidence)
   def this(allVars: Array[IntVar], confidence: Double) = this(allVars, allVars, confidence)

@@ -5,7 +5,7 @@ import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
 import oscar.cp.CPIntVar
-import solvers.cp.Branching
+import solvers.cp.{Branching, SubproblemData}
 import oscar.cp.constraints.InSet
 
 import scala.collection.mutable
@@ -13,7 +13,7 @@ import scala.collection.mutable
 /**
   * Created by dervalguillaume on 5/02/16.
   */
-class SearchDecompositionStrategy(search: Branching) extends DecompositionStrategy {
+class SearchDecompositionStrategy(search: Branching) extends ClosureDecompositionStrategy {
   var currentDepth = -1
   var currentPath: Array[Int] = null
 
