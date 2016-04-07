@@ -78,7 +78,7 @@ object GolombRuler extends DistributedCPProgram[String] with App {
   }
   var n = Integer.parseInt(args(0))
   //this.threadsToLaunch=Integer.parseInt(args(1))
-  this.subproblemsCount = Integer.parseInt(args(2))
+  this.subproblemsPerWorker = 250//Integer.parseInt(args(2))
 
   val m = Array.fill(n)(IntVar(0,(1 << (n - 1))-1))
 
@@ -119,7 +119,7 @@ object GolombRuler extends DistributedCPProgram[String] with App {
   }
 
   setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
-  println(solve())
+  println(solveLocally(4))
 }
 
 /** @author Renaud Hartert ren.hartert@gmail.com */
