@@ -1,16 +1,14 @@
 package visualisation
 
-import org.graphstream.ui.view.Viewer.CloseFramePolicy
-import org.graphstream.ui.view.{Viewer, ViewerListener}
-
-import scala.collection.JavaConversions._
-
 import algebra._
-import constraints.{ExpressionConstraint, Constraint}
-import org.graphstream.graph.{Graph, Node, Edge}
+import constraints.{Constraint, ExpressionConstraint}
 import org.graphstream.graph.implementations.SingleGraph
+import org.graphstream.graph.{Edge, Graph, Node}
+import org.graphstream.ui.view.{Viewer, ViewerListener}
 import vars.{BoolVar, IntVar}
 import visualisation.Color.Color
+
+import scala.collection.JavaConversions._
 
 object Color extends Enumeration {
   type Color = Value

@@ -1,18 +1,17 @@
 package solvers.cp
 
 import java.util
-
-import oscar.cp.TightenType
-import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy, DecompositionStrategyToClosureConverter}
 import java.util.concurrent.LinkedBlockingQueue
 
-import models.instantiated.InstantiatedCPModel
 import misc.ComputeTimeTaken.computeTimeTaken
-import models.uninstantiated.UninstantiatedModel
-import models._
-import vars.IntVar
 import misc.TimeHelper._
+import models._
+import models.instantiated.InstantiatedCPModel
+import models.uninstantiated.UninstantiatedModel
 import oscar.algo.search.SearchStatistics
+import oscar.cp.TightenType
+import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy, DecompositionStrategyToClosureConverter}
+import vars.IntVar
 
 class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCPSolve[RetVal] = new ModelDeclaration() with LocalDecomposedCPSolve[RetVal])
   extends ModelProxy[LocalDecomposedCPSolve[RetVal], RetVal](md)

@@ -1,12 +1,8 @@
 package models.uninstantiated
 
-import constraints.Constraint
 import misc.UnionFindStorage
-import models.{OptimisationMethod, Model, ModelDeclaration}
-import vars.domainstorage.DomainStorage
+import models.{Model, ModelDeclaration, OptimisationMethod}
 import vars.domainstorage.int.IntDomainStorage
-
-import scala.collection.mutable
 
 /**
  * A model that inherits from another one

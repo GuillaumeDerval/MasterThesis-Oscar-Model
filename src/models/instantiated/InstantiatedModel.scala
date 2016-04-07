@@ -2,7 +2,7 @@ package models.instantiated
 
 import misc.UnionFindStorage
 import models.uninstantiated.UninstantiatedModel
-import models.{OptimisationMethod, Model, ModelDeclaration}
+import models.{Model, ModelDeclaration, OptimisationMethod}
 import vars.domainstorage.DomainStorage
 import vars.domainstorage.int._
 

@@ -1,9 +1,5 @@
 package algebra
 
-import vars.IntVar
-
-import scala.collection.mutable.HashSet
-
 /**
  * Sum of an array of expression
  */

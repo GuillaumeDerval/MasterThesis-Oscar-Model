@@ -1,9 +1,6 @@
 package vars
 
-import algebra.BoolExpression
-import com.sun.org.apache.xpath.internal.operations.Bool
-import constraints.Constraint
-import misc.{VariableNotBoundException, EmptyDomainException}
+import misc.EmptyDomainException
 
 /**
  * A trait that all objects that behave like a BoolVar should implement

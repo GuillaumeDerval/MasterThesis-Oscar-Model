@@ -8,7 +8,10 @@ import org.graphstream.stream.PipeBase;
 import org.graphstream.ui.geom.Point3;
 import org.graphstream.ui.layout.Layout;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 
 /**
  * A layout made to show a forest. Most of the implementation comes from the HierarchicalLayout class

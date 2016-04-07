@@ -1,22 +1,16 @@
 package solvers.cp.decompositions
 
-import constraints.Table
 import misc.CartesianProduct
 import models.NoOptimisation
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
-import oscar.algo
-import oscar.algo.search
-import oscar.cp.CPIntVar
 import oscar.cp.core.NoSolutionException
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
 import vars.IntVar
 
-import scala.collection.mutable.PriorityQueue
 import scala.collection.mutable
-import scala.util.Random
 
 class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Branching) extends ClosureDecompositionStrategy {
 

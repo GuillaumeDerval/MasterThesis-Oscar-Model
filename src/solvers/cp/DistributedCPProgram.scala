@@ -2,22 +2,22 @@ package solvers.cp
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Inbox, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Props}
 import akka.event.Logging
-import akka.routing.{ActorRefRoutee, BroadcastRoutingLogic, RoundRobinRoutingLogic, Router}
+import akka.routing.{ActorRefRoutee, BroadcastRoutingLogic, Router}
 import misc.ComputeTimeTaken._
 import misc.TimeHelper._
-import models.{IntBoundaryUpdateSearchWrapper, SynchronizedIntBoundaryManager, _}
+import models._
 import models.instantiated.InstantiatedCPModel
 import models.uninstantiated.UninstantiatedModel
 import oscar.algo.search.SearchStatistics
-import oscar.cp.{CPIntVar, TightenType}
 import oscar.cp.core.CPPropagStrength
+import oscar.cp.{CPIntVar, TightenType}
 import solvers.cp.decompositions.DecompositionStrategy
 import vars.IntVar
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 /**
   * A CPProgram that can distribute works among a cluster
@@ -33,6 +33,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   implicit val program = this
 
   def setDecompositionStrategy(d: DecompositionStrategy): Unit = md.setDecompositionStrategy(d)
+
   def getDecompositionStrategy: DecompositionStrategy = md.getDecompositionStrategy
 
   def solve(): SearchStatistics = solve(modelDeclaration.getCurrentModel)
@@ -45,15 +46,17 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   }
 
   def solve(model: UninstantiatedModel): SearchStatistics = {
-    val subproblems = computeTimeTaken("Decomposition"){getDecompositionStrategy.decompose(model, subproblemsCount)}
-    println("Subproblems: "+subproblems.length.toString)
+    val subproblems = computeTimeTaken("Decomposition") {
+      getDecompositionStrategy.decompose(model, subproblemsCount)
+    }
+    println("Subproblems: " + subproblems.length.toString)
 
     val queue = new LinkedBlockingQueue[(Int, Map[Int, Int])]()
     val outputQueue = new LinkedBlockingQueue[SolvingMessage]()
 
     for (s <- subproblems.zipWithIndex)
       queue.add((s._2, s._1._1.map(
-        {case (a,b) => (a.varid, b)}
+        { case (a, b) => (a.varid, b) }
       )))
 
     val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, 0)
@@ -91,7 +94,9 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
   var done = false
 
   @volatile private var boundary = 0
+
   def get_boundary(): Int = boundary
+
   def update_boundary(newval: Int) = boundary = newval
 
   /*
@@ -107,13 +112,13 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
     * Process messages from master
     */
   def receive = {
-    case AwaitingSPMessage()                => sendNextJob(context.sender())
-    case a: DoneMessage                     => sendNextJob(context.sender())
-                                               outputQueue.add(a)
+    case AwaitingSPMessage() => sendNextJob(context.sender())
+    case a: DoneMessage => sendNextJob(context.sender())
+      outputQueue.add(a)
     case SolutionMessage(solution, Some(b)) => broadcastRouter.route(BoundUpdateMessage(b), self)
-                                               outputQueue.add(SolutionMessage(solution, Some(b)))
-    case a: WatcherMessage                  => outputQueue.add(a)
-    case _                                  => log.info("received unknown message")
+      outputQueue.add(SolutionMessage(solution, Some(b)))
+    case a: WatcherMessage => outputQueue.add(a)
+    case _ => log.info("received unknown message")
   }
 
   /**
@@ -122,8 +127,8 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
     * @param to
     */
   def sendNextJob(to: ActorRef): Unit = {
-    if(subproblemQueue.isEmpty) {
-      if(!done) {
+    if (subproblemQueue.isEmpty) {
+      if (!done) {
         broadcastRouter.route(AllDoneMessage(), self)
         context.system.terminate()
         done = true
@@ -145,6 +150,7 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
   */
 class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal], uninstantiatedModel: UninstantiatedModel) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
+
   import context.dispatcher
 
   val cpmodel = new InstantiatedCPModel(uninstantiatedModel)
@@ -166,20 +172,20 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     case m: Minimisation =>
       log.info("MIN")
       (a) => {
-      val v = cpmodel.getRepresentative(objv)
-      this.update_boundary(v.max)
-      log.info("Solver updated bound to "+v.max.toString)
-      context.parent ! SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max))
-    }
+        val v = cpmodel.getRepresentative(objv)
+        this.update_boundary(v.max)
+        log.info("Solver updated bound to " + v.max.toString)
+        context.parent ! SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max))
+      }
     case m: Maximisation =>
       log.info("MAX")
       (a) => {
-      val v = cpmodel.getRepresentative(objv)
-      this.update_boundary(v.max)
-      log.info("Solver updated bound to "+v.max.toString)
-      context.parent ! SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max))
+        val v = cpmodel.getRepresentative(objv)
+        this.update_boundary(v.max)
+        log.info("Solver updated bound to " + v.max.toString)
+        context.parent ! SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max))
 
-    }
+      }
     case _ => (a) => context.parent ! SolutionMessage(modelDeclaration.onSolution(cpmodel), None)
   }
 
@@ -202,14 +208,14 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
         solve_subproblem(spid, sp)
       }
     }
-    case BoundUpdateMessage(newBound: Int)            => {
+    case BoundUpdateMessage(newBound: Int) => {
       log.info("received bound update")
       this.update_boundary(newBound)
     }
-    case AllDoneMessage()                             => {
+    case AllDoneMessage() => {
       context.stop(self)
     }
-    case _                      => log.info("received unknown message")
+    case _ => log.info("received unknown message")
   }
 
   /**
@@ -249,10 +255,11 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
       v
     }
     val t1 = getThreadCpuTime
-    context.parent ! DoneMessage(spid, t1-t0, info)
+    context.parent ! DoneMessage(spid, t1 - t0, info)
   }
 
   def get_boundary(): Int = boundary
+
   def update_boundary(newval: Int) = boundary = newval
 }
 

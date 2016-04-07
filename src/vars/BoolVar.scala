@@ -1,7 +1,7 @@
 package vars
 
-import algebra.{IntExpression, Not, BoolExpression}
-import constraints.{ExpressionConstraint, Constraint}
+import algebra.{BoolExpression, IntExpression, Not}
+import constraints.{Constraint, ExpressionConstraint}
 import misc.VariableNotBoundException
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage

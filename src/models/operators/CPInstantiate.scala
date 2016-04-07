@@ -1,6 +1,6 @@
 package models.operators
 
-import models.instantiated.{InstantiatedCPModel, InstantiatedModel}
+import models.instantiated.InstantiatedCPModel
 import models.uninstantiated.UninstantiatedModel
 
 /**

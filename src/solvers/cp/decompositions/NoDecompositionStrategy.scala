@@ -4,8 +4,6 @@ import models.uninstantiated.UninstantiatedModel
 import solvers.cp.SubproblemData
 import vars.IntVar
 
-import scala.collection.mutable
-
 class NoDecompositionStrategy extends DecompositionStrategy
 {
   override def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int], SubproblemData)] = {

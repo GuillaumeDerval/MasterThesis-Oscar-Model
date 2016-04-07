@@ -4,8 +4,6 @@ package algebra
  * Basic operations on expressions
  */
 object ExpressionOperators {
-  import IntExpression._
-  import BoolExpression._
 
   def min(a: IntExpression*): IntExpression = new Min(a.toArray)
   def min(a: Array[IntExpression]): IntExpression = new Min(a)

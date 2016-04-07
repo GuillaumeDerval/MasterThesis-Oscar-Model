@@ -3,7 +3,7 @@ package solvers.cp
 import java.util.concurrent.LinkedBlockingQueue
 
 import constraints.Constraint
-import models.{Model, ModelDeclaration, SynchronizedIntBoundaryManager}
+import models.{Model, ModelDeclaration}
 import oscar.algo.search.SearchStatistics
 import solvers.cp.branchings.Branching
 

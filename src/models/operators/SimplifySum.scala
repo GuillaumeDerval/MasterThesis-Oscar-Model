@@ -2,7 +2,6 @@ package models.operators
 
 import algebra._
 import constraints.ExpressionConstraint
-import models.instantiated.{InstantiatedCPModel, InstantiatedModel}
 import models.uninstantiated.{ChildModel, UninstantiatedModel}
 
 /**

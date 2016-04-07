@@ -1,6 +1,5 @@
 package solvers.cp
 
-import constraints.Constraint
 import models._
 import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate

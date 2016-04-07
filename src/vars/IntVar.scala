@@ -1,7 +1,7 @@
 package vars
 
 import algebra.IntExpression
-import misc.{VariableNotBoundException, EmptyDomainException}
+import misc.VariableNotBoundException
 import models.ModelDeclaration
 import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.int.IntDomainStorage

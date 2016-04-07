@@ -2,7 +2,7 @@ package models
 
 import constraints.Constraint
 import models.uninstantiated.BaseModel
-import vars.{IntVar, IntVarImplem}
+import vars.IntVar
 
 import scala.util.DynamicVariable
 

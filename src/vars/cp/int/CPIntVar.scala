@@ -5,6 +5,7 @@ import oscar.cp.core.CPOutcome
 import vars.IntVarImplem
 import vars.cp.CPVar
 import vars.domainstorage.int._
+
 import scala.util.Random
 
 abstract class CPIntVar extends CPVar with IntVarImplem {

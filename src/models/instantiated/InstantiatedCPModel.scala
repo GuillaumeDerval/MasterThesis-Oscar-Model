@@ -2,16 +2,15 @@ package models.instantiated
 
 import algebra._
 import constraints._
-import models.{Maximisation, Minimisation}
 import models.uninstantiated.UninstantiatedModel
+import models.{Maximisation, Minimisation}
 import oscar.cp
-import oscar.cp.constraints.{CPObjectiveUnitMaximize, CPObjectiveUnitMinimize, CPObjective, CPObjectiveUnit}
+import oscar.cp.constraints.{CPObjective, CPObjectiveUnit, CPObjectiveUnitMaximize, CPObjectiveUnitMinimize}
 import oscar.cp.core.CPPropagStrength
-import oscar.cp.{CPIntVarOps, CPBoolVarOps}
-import vars.cp.int.CPBoolVar
-import vars.{BoolVar, IntVar}
-import vars.cp.int.{CPIntVar, CPBoolVar}
+import oscar.cp.{CPBoolVarOps, CPIntVarOps}
+import vars.cp.int.{CPBoolVar, CPIntVar}
 import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage, SetDomainStorage, SingletonDomainStorage}
+import vars.{BoolVar, IntVar}
 
 /**
  * An instantiated model, containing CPVars as implementations

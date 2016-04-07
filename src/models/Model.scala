@@ -1,11 +1,8 @@
 package models
 
-import constraints.{ConstraintPower, Constraint}
-import constraints.ConstraintPower.ConstraintPower
+import constraints.Constraint
 import misc.UnionFindStorage
 import vars._
-
-import scala.collection.mutable
 
 /**
  * Basic trait for all models

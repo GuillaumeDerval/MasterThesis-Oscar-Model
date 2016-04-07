@@ -1,16 +1,14 @@
+import algebra.BoolExpression._
+import algebra.IntExpression._
 import algebra.Sum
 import constraints.AllDifferent
 import models.ModelDeclaration
-import solvers.cp._
-import solvers.cp.decompositions.{ReginDecompositionStrategy, SearchDecompositionStrategy}
-import vars.IntVar
-import algebra.IntExpression._
-import algebra.BoolExpression._
 import oscar.util.selectMin
-import solvers.cp.branchings.Branching.{branch, noAlternative}
+import solvers.cp._
 import solvers.cp.branchings.Branching
-
-import scala.io.Source
+import solvers.cp.branchings.Branching.{branch, noAlternative}
+import solvers.cp.decompositions.SearchDecompositionStrategy
+import vars.IntVar
 
 class DemoNQueens extends ModelDeclaration with LocalDecomposedCPSolve[String] {
   val nQueens = 16 // Number of queens

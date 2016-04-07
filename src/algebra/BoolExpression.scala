@@ -1,10 +1,9 @@
 package algebra
 
-import constraints.{ExpressionConstraint, Constraint}
-import misc.{VariableNotBoundException, EmptyDomainException}
+import constraints.{Constraint, ExpressionConstraint}
+import misc.{EmptyDomainException, VariableNotBoundException}
 import models.ModelDeclaration
 import vars.BoolVar
-import IntExpression._
 
 /**
  * Represents a Boolean expression (an IntExpression that returns a boolean, 0 or 1)

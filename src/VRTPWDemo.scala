@@ -1,7 +1,7 @@
-import constraints._
 import algebra.Sum
+import constraints._
 import solvers.cp
-import solvers.cp.{DistributedCPProgram, LocalParallelCPProgram}
+import solvers.cp.DistributedCPProgram
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
 import vars.IntVar
@@ -9,8 +9,8 @@ import vars.IntVar
 //import oscar.visual.VisualFrame
 //import oscar.visual.VisualTour
 //import oscar.visual.VisualUtil
-import scala.io.Source
 import scala.collection.mutable.ArrayBuffer
+import scala.io.Source
 
 /*
 object GolombRulerGecode extends CPModel with App {
