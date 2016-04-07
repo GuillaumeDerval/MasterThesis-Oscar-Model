@@ -105,15 +105,15 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
   }
 }
 
-class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) extends ClosureDecompositionStrategy {
+class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) extends DecompositionStrategy {
 
   class SubproblemInfo(val assignment: List[(IntVar, Int)], val cartesianProduct: Double, val path: List[Int]) extends Ordered[SubproblemInfo] {
     override def compare(that: SubproblemInfo): Int = cartesianProduct.compare(that.cartesianProduct)
   }
 
-  def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
+  def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)] = {
     if(count == 0) //no decomposition
-      return List[((InstantiatedCPModel) => Unit,SubproblemData)]()
+      return List[(Map[IntVar, Int],SubproblemData)]()
 
     //Initialise a CP Model
     val vmodel = new ChildModel(model)
@@ -175,13 +175,8 @@ class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) ex
     })
 
     r.map(sp => {
-      val spd = new SubproblemData(sp.cartesianProduct, model.optimisationMethod, sp.path.sum) //TODO
-      val ass = sp.assignment
-      ((m: InstantiatedCPModel) => {
-        println(ass.mkString("-"))
-        for(tuple <- ass)
-           m.post(tuple._1 == tuple._2)
-      }, spd)
+      val spd = new SubproblemData(sp.cartesianProduct, model.optimisationMethod, sp.path.sum)
+      (sp.assignment.toMap, spd)
     })
   }
 }

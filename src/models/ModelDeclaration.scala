@@ -31,7 +31,7 @@ class ModelDeclaration {
    * @param model: model on which to apply the function
    * @param func: function to apply
    */
-  def applyFuncOnModel(model: Model)(func: => Unit) = {
+  def applyFuncOnModel[RetVal](model: Model)(func: => RetVal): RetVal = {
     assert(model.declaration == this, "The model must be a sub-model of the declared model " +
       "of this instance of ModelDeclaration")
     current_model.withValue(model)(func)

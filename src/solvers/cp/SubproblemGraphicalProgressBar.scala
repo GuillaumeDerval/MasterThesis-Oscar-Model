@@ -328,14 +328,13 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   }
 
 
-  override def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int], ss: SearchStatistics): Unit = {
+  override def endedSubproblem(spid: Int, timeTaken: Double, ss: SearchStatistics): Unit = {
     subproblemsTime(spid) = timeTaken
     subproblemsResolving -= spid
     subproblemsDone += 1
     instantMeanTime.update(timeTaken)
     exponentialMeanTime.update(timeTaken)
     subproblemsTotalCPUTime += timeTaken
-    lastBound = currentBound
     cartesianProductCCurrent += cartesianProductC(spid)
     updateTime()
 

@@ -17,15 +17,18 @@ trait BoundaryManager {
   def update_boundary(newval: B): Unit
 }
 
-class SynchronizedIntBoundaryManager(initial: Int) extends BoundaryManager {
+trait IntBoundaryManager extends BoundaryManager {
   type B = Int
+}
+
+class SynchronizedIntBoundaryManager(initial: Int) extends IntBoundaryManager {
   @volatile private var boundary = initial
   def get_boundary(): Int = boundary
   def update_boundary(newval: Int) = boundary = newval
 }
 
 class IntBoundaryUpdateSearchWrapper(original: oscar.algo.search.Branching,
-                                     boundaryManager:SynchronizedIntBoundaryManager,
+                                     boundaryManager:IntBoundaryManager,
                                      cpobjective: CPObjectiveUnit) extends oscar.algo.search.Branching {
   override def alternatives(): Seq[Branching.Alternative] = {
     original.alternatives().map((a: Branching.Alternative) => {
@@ -39,7 +42,7 @@ class IntBoundaryUpdateSearchWrapper(original: oscar.algo.search.Branching,
 }
 
 object CPIntBoundaryUpdateSolutionWrapper {
-  def apply(original: Model => Unit, boundaryManager:SynchronizedIntBoundaryManager, variable: IntVar): Model => Unit = {
+  def apply(original: Model => Unit, boundaryManager:IntBoundaryManager, variable: IntVar): Model => Unit = {
     (model: Model) => {
       val v = model.getRepresentative(variable)
       if(v.isBound)

@@ -9,26 +9,33 @@ import solvers.cp.branchings.Branching
 
 trait Watcher[RetVal] {
   def startedSubproblem(spid: Int): Unit
-  def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int], searchStats: SearchStatistics): Unit
+  def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit
   def newSolution(solution: RetVal, newBound: Option[Int]): Unit
   def allDone(): Unit
 }
 
-class SolvingMessage
-case class SolutionMessage[RetVal](solution: RetVal) extends SolvingMessage
-case class DoneMessage(spid: Int, timeTakenNS: Double, searchStats: SearchStatistics) extends SolvingMessage
-case class StartedMessage(spid: Int) extends SolvingMessage
-case class AllDoneMessage() extends SolvingMessage
+trait SolvingMessage
+trait MasterToSolverMessage extends SolvingMessage
+trait SolverToMasterMessage extends SolvingMessage
+trait WatcherMessage extends SolvingMessage
 
-class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]], outputQueue: LinkedBlockingQueue[SolvingMessage],
-                      boundaryManager: Option[SynchronizedIntBoundaryManager]) extends Runnable {
+case class AwaitingSPMessage() extends SolverToMasterMessage
+case class SolutionMessage[RetVal](solution: RetVal, newBound: Option[Int]) extends SolverToMasterMessage with WatcherMessage
+case class DoneMessage(spid: Int, timeTakenNS: Double, searchStats: SearchStatistics) extends SolverToMasterMessage with WatcherMessage
+case class StartedMessage(spid: Int) extends SolverToMasterMessage with WatcherMessage
+
+case class DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) extends MasterToSolverMessage
+case class BoundUpdateMessage(newBound: Int) extends MasterToSolverMessage
+case class AllDoneMessage() extends MasterToSolverMessage with WatcherMessage
+
+class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
+                              outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Runnable {
   override def run(): Unit = {
     var done = false
     while(!done) {
       outputQueue.take() match {
-        case SolutionMessage(solution: RetVal) => watchers.foreach(_.newSolution(solution, boundaryManager.map(_.get_boundary())))
-        case DoneMessage(spid, newtimeTaken, searchStats) => watchers.foreach(_.endedSubproblem(spid, newtimeTaken,
-          boundaryManager.map(_.get_boundary()), searchStats))
+        case SolutionMessage(solution: RetVal, newBound: Option[Int]) => watchers.foreach(_.newSolution(solution, newBound))
+        case DoneMessage(spid, newtimeTaken, searchStats) => watchers.foreach(_.endedSubproblem(spid, newtimeTaken, searchStats))
         case StartedMessage(spid) => watchers.foreach(_.startedSubproblem(spid))
         case AllDoneMessage() =>
           done = true
@@ -62,7 +69,7 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       nSols = currentStatistics.nSols
     )
   }
-  override def endedSubproblem(spid: Int, timeTaken: Double, currentBound: Option[Int], searchStats: SearchStatistics): Unit = {
+  override def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit = {
     currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes+searchStats.nNodes,
       nFails = currentStatistics.nFails+searchStats.nFails,
       time = currentStatistics.time + searchStats.time,

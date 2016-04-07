@@ -1,7 +1,7 @@
 import constraints._
 import algebra.Sum
 import solvers.cp
-import solvers.cp.LocalParallelCPProgram
+import solvers.cp.{DistributedCPProgram, LocalParallelCPProgram}
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
 import vars.IntVar
@@ -70,14 +70,14 @@ object GolombRulerGecode extends CPModel with App {
   println(start())
 }
  */
-object GolombRuler extends LocalParallelCPProgram[String] with App {
+object GolombRuler extends DistributedCPProgram[String] with App {
   def increasing(y: Array[IntVar]) = {
     for (i <- 1 until y.length) {
       post(y(i - 1) < y(i))
     }
   }
   var n = Integer.parseInt(args(0))
-  this.threadsToLaunch=Integer.parseInt(args(1))
+  //this.threadsToLaunch=Integer.parseInt(args(1))
   this.subproblemsCount = Integer.parseInt(args(2))
 
   val m = Array.fill(n)(IntVar(0,(1 << (n - 1))-1))

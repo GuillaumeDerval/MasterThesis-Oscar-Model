@@ -58,7 +58,7 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
 
     val statWatcher = new StatisticsWatcher[RetVal]
     val watchers = Array[Watcher[RetVal]](statWatcher, pb)
-    val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue, boundaryManager))
+    val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue))
 
     watcher_thread.start()
     threads.foreach(_.start())
@@ -84,12 +84,13 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
           case _ => null
         }
 
-        val initialOnSolution: (Model => Unit) = (a) => outputQueue.add(SolutionMessage(onSolution(cpmodel)))
-        //val initialOnSolution: (Model => Unit) = (a) => {}
-
         val solution: Model => Unit = boundaryManager match {
-          case Some(bm) => CPIntBoundaryUpdateSolutionWrapper(initialOnSolution, bm, objv)
-          case None => initialOnSolution
+          case Some(bm) => (a) => {
+            val v = cpmodel.getRepresentative(objv)
+            bm.update_boundary(v.max)
+            outputQueue.add(SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max)))
+          }
+          case _ => (a) => outputQueue.add(SolutionMessage(modelDeclaration.onSolution(cpmodel), None))
         }
 
         //TODO: test without this
