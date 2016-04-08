@@ -4,11 +4,11 @@ import java.util
 import java.util.concurrent.LinkedBlockingQueue
 
 import misc.ComputeTimeTaken.computeTimeTaken
+import misc.SearchStatistics
 import misc.TimeHelper._
 import models._
 import models.instantiated.InstantiatedCPModel
 import models.uninstantiated.UninstantiatedModel
-import oscar.algo.search.SearchStatistics
 import oscar.cp.TightenType
 import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy, DecompositionStrategyToClosureConverter}
 import vars.IntVar
@@ -131,7 +131,7 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
             }
             cpmodel.cpSolver.searchEngine.clearOnSolution()
             val t1 = getThreadCpuTime
-            outputQueue.add(DoneMessage(spid, t1-t0, info))
+            outputQueue.add(DoneMessage(spid, t1-t0, new SearchStatistics(info)))
           }
         }
       }

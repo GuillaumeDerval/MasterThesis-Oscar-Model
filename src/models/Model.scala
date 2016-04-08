@@ -7,7 +7,7 @@ import vars._
 /**
  * Basic trait for all models
  */
-trait Model {
+trait Model extends Serializable {
   type IntVarImplementation <: IntVarImplem
 
   val declaration: ModelDeclaration

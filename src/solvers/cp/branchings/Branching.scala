@@ -6,7 +6,7 @@ import vars.IntVar
 /**
   * Created by dervalguillaume on 4/11/15.
   */
-trait Branching {
+trait Branching extends Serializable {
   def forModel(model: InstantiatedCPModel): oscar.algo.search.Branching
   def apply(model: InstantiatedCPModel) = forModel(model)
 }

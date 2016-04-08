@@ -2,16 +2,15 @@ package solvers.cp
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem}
 import akka.event.Logging
-import akka.routing.{ActorRefRoutee, BroadcastRoutingLogic, Router}
-import com.typesafe.config.ConfigFactory
+import akka.routing.{BroadcastRoutingLogic, Router}
+import com.typesafe.config.{Config, ConfigFactory}
 import misc.ComputeTimeTaken._
 import misc.TimeHelper._
 import models._
 import models.instantiated.InstantiatedCPModel
 import models.uninstantiated.UninstantiatedModel
-import oscar.algo.search.SearchStatistics
 import oscar.cp.core.CPPropagStrength
 import oscar.cp.{CPIntVar, TightenType}
 import solvers.cp.decompositions.DecompositionStrategy
@@ -19,6 +18,9 @@ import vars.IntVar
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+import akka.actor.{Address, Deploy, Props}
+import akka.remote.RemoteScope
+import misc.SearchStatistics
 
 /**
   * A CPProgram that can distribute works among a cluster
@@ -37,8 +39,21 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 
   def getDecompositionStrategy: DecompositionStrategy = md.getDecompositionStrategy
 
+  /**
+    * Starts the CPProgram locally on threadCount threads, on the current model
+    *
+    * @param threadCount number of threads to use. By default, it is the number of available CPU
+    * @return
+    */
   def solveLocally(threadCount: Int = Runtime.getRuntime.availableProcessors()): SearchStatistics = solveLocally(modelDeclaration.getCurrentModel, threadCount)
 
+  /**
+    * Starts the CPProgram locally on threadCount threads, on the current model
+    *
+    * @param model the model to solve
+    * @param threadCount number of threads to use
+    * @return
+    */
   def solveLocally(model: Model, threadCount: Int): SearchStatistics = {
     model match {
       case m: UninstantiatedModel => solveLocally(m, threadCount)
@@ -46,63 +61,178 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     }
   }
 
-  def solve(model: UninstantiatedModel, subproblemCount: Int, createSolvers: (ActorSystem, ActorRef) => Unit): SearchStatistics = {
-    val subproblems = computeTimeTaken("Decomposition") {
-      getDecompositionStrategy.decompose(model, subproblemCount)
-    }
-    println("Subproblems: " + subproblems.length.toString)
-
-    val queue = new LinkedBlockingQueue[(Int, Map[Int, Int])]()
-    val outputQueue = new LinkedBlockingQueue[SolvingMessage]()
-
-    for (s <- subproblems.zipWithIndex)
-      queue.add((s._2, s._1._1.map(
-        { case (a, b) => (a.varid, b) }
-      )))
-
-    val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, 0)
-    pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
-
-    val statWatcher = new StatisticsWatcher[RetVal]
-    val watchers = Array[Watcher[RetVal]](statWatcher, pb)
-    val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue))
-    watcher_thread.start()
-
-    val system = ActorSystem("ClusterSystem")
-    val masterActor = system.actorOf(Props(new SolverMaster(md, model, queue, outputQueue)), "master")
-
-    createSolvers(system, masterActor)
-
-    pb.start()
-
-    Await.result(system.whenTerminated, Duration.Inf)
-    watcher_thread.join()
-
-    statWatcher.get
-  }
-
+  /**
+    * Starts the CPProgram locally on threadCount threads, on the current model
+    *
+    * @param model the model to solve
+    * @param threadCount number of threads to use
+    * @return
+    */
   def solveLocally(model: UninstantiatedModel, threadCount: Int): SearchStatistics = {
-    solve(model, subproblemsPerWorker*threadCount, (system, masterActor) => {
-      for(i <- 0 until threadCount)
-        system.actorOf(SolverActor.props[RetVal](md, model, masterActor))
-    })
+    solve(model, subproblemsPerWorker*threadCount,
+      ConfigFactory.load(),
+      (system, masterActor) => {
+        for(i <- 0 until threadCount)
+          system.actorOf(SolverActor.props[RetVal](md, masterActor))
+      })
   }
+
+  /**
+    * Starts the CPProgram in a distributed fashion
+    *
+    * @param remoteHosts list of tuples (hostname, port) on which remote Akka ActorSystems can be contacted
+    * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
+    * @return
+    */
+  def solveDistributed(remoteHosts: List[(String, Int)], localhost: (String, Int)): SearchStatistics = {
+    solveDistributed(modelDeclaration.getCurrentModel, remoteHosts, localhost)
+  }
+
+  /**
+    * Starts the CPProgram in a distributed fashion
+    *
+    * @param model model to solve
+    * @param remoteHosts list of tuples (hostname, port) on which remote Akka ActorSystems can be contacted
+    * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
+    * @return
+    */
+  def solveDistributed(model: Model, remoteHosts: List[(String, Int)], localhost: (String, Int)): SearchStatistics = {
+    model match {
+      case m: UninstantiatedModel => solveDistributed(m, remoteHosts, localhost)
+      case _ => sys.error("The model is already instantiated")
+    }
+  }
+
+  /**
+    * Starts the CPProgram in a distributed fashion
+    *
+    * @param model model to solve
+    * @param remoteHosts list of tuples (hostname, port) on which remote Akka ActorSystems can be contacted
+    * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
+    * @return
+    */
+  def solveDistributed(model: UninstantiatedModel, remoteHosts: List[(String, Int)], localhost: (String, Int)): SearchStatistics = {
+    val (hostname, port) = localhost
+    val config = ConfigFactory.parseString(s"""
+       akka {
+         actor {
+           provider = "akka.remote.RemoteActorRefProvider"
+           serializers {
+             java = "akka.serialization.JavaSerializer"
+             proto = "akka.remote.serialization.ProtobufSerializer"
+           }
+           serialization-bindings {
+             "models.Model" = java
+             "models.ModelDeclaration" = java
+           }
+         }
+         remote {
+           enabled-transports = ["akka.remote.netty.tcp"]
+           netty.tcp {
+             hostname = "$hostname"
+             port = $port
+           }
+         }
+       }
+     """)
+
+    solve(model, subproblemsPerWorker*remoteHosts.length, config,
+      (system, masterActor) => {
+        for((hostnameL, portL) <- remoteHosts) {
+          val address = Address("akka.tcp", "solving", hostnameL, portL)
+          system.actorOf(SolverActor.props[RetVal](md, masterActor).withDeploy(Deploy(scope = RemoteScope(address))))
+        }
+      }
+    )
+  }
+
+  /**
+    * Starts the CPProgram using possibly remote solvers, created by createSolvers
+    *
+    * @param model model to solve
+    * @param subproblemCount number of subproblems needed
+    * @param systemConfig akka config to use
+    * @param createSolvers function that creates SolverActor
+    * @return
+    */
+  def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => Unit): SearchStatistics = {
+    modelDeclaration.applyFuncOnModel(model) {
+      val subproblems = computeTimeTaken("Decomposition") {
+        getDecompositionStrategy.decompose(model, subproblemCount)
+      }
+      println("Subproblems: " + subproblems.length.toString)
+
+      val queue = new LinkedBlockingQueue[(Int, Map[Int, Int])]()
+      val outputQueue = new LinkedBlockingQueue[SolvingMessage]()
+
+      for (s <- subproblems.zipWithIndex)
+        queue.add((s._2, s._1._1.map(
+          { case (a, b) => (a.varid, b) }
+        )))
+
+      val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, 0)
+      pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
+
+      val statWatcher = new StatisticsWatcher[RetVal]
+      val watchers = Array[Watcher[RetVal]](statWatcher, pb)
+      val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue))
+      watcher_thread.start()
+
+      val system = ActorSystem("solving", systemConfig)
+      val masterActor = system.actorOf(Props(new SolverMaster(md, queue, outputQueue)), "master")
+
+      createSolvers(system, masterActor)
+
+      pb.start()
+
+      Await.result(system.whenTerminated, Duration.Inf)
+      watcher_thread.join()
+
+      statWatcher.get
+    }
+  }
+}
+
+object SimpleRemoteSolverSystem extends App {
+  val hostname = args(0)
+  val port = Integer.parseInt(args(1))
+  val config = ConfigFactory.parseString(s"""
+       akka {
+         actor {
+           provider = "akka.remote.RemoteActorRefProvider"
+         }
+         remote {
+           enabled-transports = ["akka.remote.netty.tcp"]
+           netty.tcp {
+             hostname = "$hostname"
+             port = $port
+           }
+         }
+         serializers {
+           java = "akka.serialization.JavaSerializer"
+           proto = "akka.remote.serialization.ProtobufSerializer"
+         }
+       }
+     """)
+  val system = ActorSystem("solving", config)
+  Await.result(system.whenTerminated, Duration.Inf)
 }
 
 /**
   * An actor that manages a collection of SolverActor
-  * @param modelDeclaration
-  * @param uninstantiatedModel
+  *
+  * @param modelDeclaration that contains an UninstanciatedModel as current model (the one to be solved)
   * @param subproblemQueue
   * @param outputQueue
   * @tparam RetVal
   */
 class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal],
-                           uninstantiatedModel: UninstantiatedModel,
                            subproblemQueue: LinkedBlockingQueue[(Int, Map[Int, Int])],
                            outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
   var done = false
+
+  val uninstantiatedModel = modelDeclaration.getCurrentModel.asInstanceOf[UninstantiatedModel]
 
   @volatile private var boundary: Int = uninstantiatedModel.optimisationMethod match {
     case m: Minimisation => uninstantiatedModel.getRepresentative(m.objective).max
@@ -165,16 +295,16 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
 /**
   * A solver actor, that solves one subproblem at once
   *
-  * @param modelDeclaration
-  * @param uninstantiatedModel
+  * @param modelDeclaration that contains an UninstanciatedModel as current model (this is the one to be solved)
   * @tparam RetVal
   */
 class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal],
-                          uninstantiatedModel: UninstantiatedModel,
                           master: ActorRef) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
 
   import context.dispatcher
+
+  val uninstantiatedModel = modelDeclaration.getCurrentModel.asInstanceOf[UninstantiatedModel]
 
   val cpmodel = new InstantiatedCPModel(uninstantiatedModel)
   cpmodel.cpSolver.silent = true
@@ -244,8 +374,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
   def solve_subproblem(spid: Int, sp: Map[Int, Int]): Unit = {
     val t0 = getThreadCpuTime
     val info = modelDeclaration.applyFuncOnModel(cpmodel) {
-      val v = cpmodel.cpSolver.startSubjectTo() {
-
+      cpmodel.cpSolver.startSubjectTo() {
         cpmodel.cpObjective.tightenMode = TightenType.NoTighten
         for ((variable, value) <- sp) {
           val v: CPIntVar = cpmodel.intRepresentatives.find(variable).realCPVar
@@ -271,11 +400,10 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
           cpmodel.cpObjective.best = get_boundary()
         }
       }
-      cpmodel.cpSolver.searchEngine.clearOnSolution()
-      v
     }
+    cpmodel.cpSolver.searchEngine.clearOnSolution()
     val t1 = getThreadCpuTime
-    master ! DoneMessage(spid, t1 - t0, info)
+    master ! DoneMessage(spid, t1 - t0, new SearchStatistics(info))
   }
 
   def get_boundary(): Int = boundary
@@ -284,6 +412,6 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
 }
 
 object SolverActor {
-  def props[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal], uninstantiatedModel: UninstantiatedModel, master: ActorRef): Props =
-    Props(new SolverActor[RetVal](modelDeclaration, uninstantiatedModel, master))
+  def props[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal], master: ActorRef): Props =
+    Props(classOf[SolverActor[RetVal]], modelDeclaration, master)
 }

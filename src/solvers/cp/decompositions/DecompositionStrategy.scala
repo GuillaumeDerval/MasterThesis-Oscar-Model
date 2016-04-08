@@ -11,7 +11,7 @@ import vars.IntVar
   * Decomposition strategy that uses assignations as decompositions
   * Simple to share among multiple machines
   */
-trait DecompositionStrategy {
+trait DecompositionStrategy extends Serializable {
   /**
     * Decompose the problem
     * @param model the model to decompose

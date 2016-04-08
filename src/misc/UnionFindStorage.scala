@@ -28,7 +28,7 @@ object UnionFindStorage {
  * Constraint: the number of entries can only increase
  */
 //TODO: should provide a thread-safe implem, this is not the case for now
-class UnionFindStorage[StoredType](private val array: ArrayBuffer[Elem[StoredType]]) {
+class UnionFindStorage[StoredType](private val array: ArrayBuffer[Elem[StoredType]]) extends Serializable {
   /**
    * Add a new element to the union-find, creating a new set
    * @param elem
@@ -84,7 +84,7 @@ class UnionFindStorage[StoredType](private val array: ArrayBuffer[Elem[StoredTyp
   }
 }
 
-private abstract class Elem[StoredType](val pos: Int) {
+private abstract class Elem[StoredType](val pos: Int) extends Serializable {
   def get(array: ArrayBuffer[Elem[StoredType]]): ElemMain[StoredType]
 }
 

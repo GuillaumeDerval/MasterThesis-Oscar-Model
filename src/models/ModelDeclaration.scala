@@ -1,19 +1,19 @@
 package models
 
 import constraints.Constraint
+import misc.{DynamicModelVariable}
 import models.uninstantiated.BaseModel
 import vars.IntVar
-
-import scala.util.DynamicVariable
 
 /**
  * The declaration of a Model.
  */
-class ModelDeclaration {
+class ModelDeclaration extends Serializable {
   implicit val modelDeclaration = this
 
   private val declared_model: Model = new BaseModel(this)
-  private val current_model: DynamicVariable[Model] = new DynamicVariable[Model](declared_model)
+  private val current_model: DynamicModelVariable = new DynamicModelVariable()
+  current_model.value = declared_model
 
   /**
    * Get the initial model

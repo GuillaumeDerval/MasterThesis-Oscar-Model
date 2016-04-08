@@ -3,8 +3,8 @@ package solvers.cp
 import java.util.concurrent.LinkedBlockingQueue
 
 import constraints.Constraint
+import misc.SearchStatistics
 import models.{Model, ModelDeclaration}
-import oscar.algo.search.SearchStatistics
 import solvers.cp.branchings.Branching
 
 trait Watcher[RetVal] {

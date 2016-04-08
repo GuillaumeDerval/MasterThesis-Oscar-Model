@@ -119,7 +119,7 @@ object GolombRuler extends DistributedCPProgram[String] with App {
   }
 
   setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
-  println(solveLocally(4))
+  println(solveDistributed(List(("127.0.0.1", 2001), ("127.0.0.1", 2002)), ("127.0.0.1", 2000)))
 }
 
 /** @author Renaud Hartert ren.hartert@gmail.com */

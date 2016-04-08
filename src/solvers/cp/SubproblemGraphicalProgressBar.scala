@@ -5,7 +5,7 @@ import java.util.TimerTask
 import javax.swing._
 
 import misc.TimeHelper._
-import misc.{ExponentialMovingAverage, FixedBinsHistogramDataset, SimpleMovingAverage}
+import misc.{ExponentialMovingAverage, FixedBinsHistogramDataset, SearchStatistics, SimpleMovingAverage}
 import org.jfree.chart.axis.{AxisLocation, NumberAxis}
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
@@ -13,7 +13,6 @@ import org.jfree.chart.{ChartFactory, ChartPanel}
 import org.jfree.data.xy
 import org.jfree.data.xy.XYSeries
 import org.jfree.util.ShapeUtilities
-import oscar.algo.search.SearchStatistics
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
