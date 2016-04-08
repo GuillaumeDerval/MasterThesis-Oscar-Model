@@ -1,7 +1,7 @@
 import algebra.Sum
 import constraints._
 import solvers.cp
-import solvers.cp.DistributedCPProgram
+import solvers.cp.{DistributedCPApp, DistributedCPAppConfig, DistributedCPProgram}
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
 import vars.IntVar
@@ -12,73 +12,18 @@ import vars.IntVar
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
-/*
-object GolombRulerGecode extends CPModel with App {
-  def increasing(y: Array[CPIntVar]) = {
-    for (i <- 1 until y.length) {
-      add(y(i - 1) < y(i), Strong)
-    }
+object GolombRuler extends DistributedCPApp[String] with App {
+  override lazy val config = new DistributedCPAppConfig {
+    val size = trailArg[Int](descr = "Size of the golomb ruler")
   }
 
-  var n = 12
-  if (args.length > 0) {
-    n = args(0).toInt
-  }
-
-  val m = Array.fill(n)(CPIntVar(0 until 1 << (n - 1)))
-
-  // Assume first mark to be zero
-  add(m(0) == 0)
-
-  // Order marks
-  increasing(m)
-
-  // Number of marks and differences
-  val n_d = (n*n-n)/2
-
-  // Array of differences
-  val d = Array.ofDim[CPIntVar](n_d)
-
-  var k = 0
-  for(i <- 0 until n-1) {
-    for(j <- i+1 until n) {
-      d(k) = m(j)-m(i)
-      add(d(k) >= ((j-i)*(j-i+1)/2))
-      k += 1
-    }
-  }
-
-  println(k)
-  println(n_d)
-  add(allDifferent(d), Strong)
-
-  if (n > 2)
-    add(d(0) < d(n_d-1))
-
-  minimize(m(n-1))
-
-  search {
-    binaryStatic(m)
-  }
-
-  onSolution {
-    println("\nSolution:")
-    print("mark: " + m.mkString(","))
-    println("\ndifferences: " + d.mkString(","))
-    println()
-  }
-  println(start())
-}
- */
-object GolombRuler extends DistributedCPProgram[String] with App {
   def increasing(y: Array[IntVar]) = {
     for (i <- 1 until y.length) {
       post(y(i - 1) < y(i))
     }
   }
-  var n = Integer.parseInt(args(0))
-  //this.threadsToLaunch=Integer.parseInt(args(1))
-  this.subproblemsPerWorker = 250//Integer.parseInt(args(2))
+
+  var n = config.size()
 
   val m = Array.fill(n)(IntVar(0,(1 << (n - 1))-1))
 
@@ -119,7 +64,7 @@ object GolombRuler extends DistributedCPProgram[String] with App {
   }
 
   setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
-  println(solveDistributed(List(("127.0.0.1", 2001), ("127.0.0.1", 2002)), ("127.0.0.1", 2000)))
+  println(solve())
 }
 
 /** @author Renaud Hartert ren.hartert@gmail.com */

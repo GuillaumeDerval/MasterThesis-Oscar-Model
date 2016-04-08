@@ -13,6 +13,7 @@ import org.jfree.chart.{ChartFactory, ChartPanel}
 import org.jfree.data.xy
 import org.jfree.data.xy.XYSeries
 import org.jfree.util.ShapeUtilities
+import vars.IntVar
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -409,5 +410,17 @@ object SubproblemGraphicalProgressBar {
     }
 
     gpb
+  }
+
+  def getRegisterer[RetVal] = {
+    val a = (subproblems: scala.collection.immutable.List[(Map[IntVar, Int], SubproblemData)]) => {
+      val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.length, 0)
+      pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
+      pb
+    }
+    val b = (w: Watcher[RetVal]) => {
+      w.asInstanceOf[SubproblemGraphicalProgressBar[RetVal]].start()
+    }
+    (a,b)
   }
 }

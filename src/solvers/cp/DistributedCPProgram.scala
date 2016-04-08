@@ -22,6 +22,8 @@ import akka.actor.{Address, Deploy, Props}
 import akka.remote.RemoteScope
 import misc.SearchStatistics
 
+import scala.collection.mutable.ListBuffer
+
 /**
   * A CPProgram that can distribute works among a cluster
   *
@@ -30,10 +32,22 @@ import misc.SearchStatistics
   */
 class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[RetVal] = new ModelDeclaration() with DecomposedCPSolve[RetVal])
   extends ModelProxy[DecomposedCPSolve[RetVal], RetVal](md) {
-
-  var subproblemsPerWorker = 250
-
   implicit val program = this
+
+  protected val registeredWatchers: scala.collection.mutable.ListBuffer[(
+      (List[(Map[IntVar, Int], SubproblemData)]) => Watcher[RetVal],
+      (Watcher[RetVal]) => Unit
+    )] = ListBuffer()
+
+  /**
+    * Register a new watcher to be added when the solving begins
+    * @param creator creates a new Watcher, given the subproblem list
+    * @param initiator initiate the Watcher. Called after the resolution has begun.
+    */
+  def registerWatcher(creator: (List[(Map[IntVar, Int], SubproblemData)]) => Watcher[RetVal],
+                      initiator: (Watcher[RetVal]) => Unit): Unit = {
+    registeredWatchers += ((creator, initiator))
+  }
 
   def setDecompositionStrategy(d: DecompositionStrategy): Unit = md.setDecompositionStrategy(d)
 
@@ -45,7 +59,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param threadCount number of threads to use. By default, it is the number of available CPU
     * @return
     */
-  def solveLocally(threadCount: Int = Runtime.getRuntime.availableProcessors()): SearchStatistics = solveLocally(modelDeclaration.getCurrentModel, threadCount)
+  def solveLocally(threadCount: Int = Runtime.getRuntime.availableProcessors(), sppw: Int = 100): SearchStatistics = solveLocally(modelDeclaration.getCurrentModel, threadCount, sppw)
 
   /**
     * Starts the CPProgram locally on threadCount threads, on the current model
@@ -54,9 +68,9 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param threadCount number of threads to use
     * @return
     */
-  def solveLocally(model: Model, threadCount: Int): SearchStatistics = {
+  def solveLocally(model: Model, threadCount: Int, sppw: Int): SearchStatistics = {
     model match {
-      case m: UninstantiatedModel => solveLocally(m, threadCount)
+      case m: UninstantiatedModel => solveLocally(m, threadCount, sppw)
       case _ => sys.error("The model is already instantiated")
     }
   }
@@ -68,8 +82,8 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param threadCount number of threads to use
     * @return
     */
-  def solveLocally(model: UninstantiatedModel, threadCount: Int): SearchStatistics = {
-    solve(model, subproblemsPerWorker*threadCount,
+  def solveLocally(model: UninstantiatedModel, threadCount: Int, sppw: Int): SearchStatistics = {
+    solve(model, sppw*threadCount,
       ConfigFactory.load(),
       (system, masterActor) => {
         for(i <- 0 until threadCount)
@@ -84,8 +98,8 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
     * @return
     */
-  def solveDistributed(remoteHosts: List[(String, Int)], localhost: (String, Int)): SearchStatistics = {
-    solveDistributed(modelDeclaration.getCurrentModel, remoteHosts, localhost)
+  def solveDistributed(remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int = 100): SearchStatistics = {
+    solveDistributed(modelDeclaration.getCurrentModel, remoteHosts, localhost, sppw)
   }
 
   /**
@@ -96,9 +110,9 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
     * @return
     */
-  def solveDistributed(model: Model, remoteHosts: List[(String, Int)], localhost: (String, Int)): SearchStatistics = {
+  def solveDistributed(model: Model, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): SearchStatistics = {
     model match {
-      case m: UninstantiatedModel => solveDistributed(m, remoteHosts, localhost)
+      case m: UninstantiatedModel => solveDistributed(m, remoteHosts, localhost, sppw)
       case _ => sys.error("The model is already instantiated")
     }
   }
@@ -111,7 +125,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
     * @return
     */
-  def solveDistributed(model: UninstantiatedModel, remoteHosts: List[(String, Int)], localhost: (String, Int)): SearchStatistics = {
+  def solveDistributed(model: UninstantiatedModel, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): SearchStatistics = {
     val (hostname, port) = localhost
     val config = ConfigFactory.parseString(s"""
        akka {
@@ -136,7 +150,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
        }
      """)
 
-    solve(model, subproblemsPerWorker*remoteHosts.length, config,
+    solve(model, sppw*remoteHosts.length, config,
       (system, masterActor) => {
         for((hostnameL, portL) <- remoteHosts) {
           val address = Address("akka.tcp", "solving", hostnameL, portL)
@@ -157,7 +171,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     */
   def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => Unit): SearchStatistics = {
     modelDeclaration.applyFuncOnModel(model) {
-      val subproblems = computeTimeTaken("Decomposition") {
+      val subproblems: List[(Map[IntVar, Int], SubproblemData)] = computeTimeTaken("Decomposition") {
         getDecompositionStrategy.decompose(model, subproblemCount)
       }
       println("Subproblems: " + subproblems.length.toString)
@@ -170,11 +184,17 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
           { case (a, b) => (a.varid, b) }
         )))
 
-      val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, 0)
-      pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
+      //Create watchers
+      val createdWatchers = registeredWatchers.map((tuple) => {
+        val watcher = tuple._1(subproblems)
+        (watcher, () => tuple._2(watcher))
+      })
+
+      //val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, 0)
+      //pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
 
       val statWatcher = new StatisticsWatcher[RetVal]
-      val watchers = Array[Watcher[RetVal]](statWatcher, pb)
+      val watchers = createdWatchers.map(_._1).toArray ++ Array[Watcher[RetVal]](statWatcher)
       val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue))
       watcher_thread.start()
 
@@ -183,7 +203,9 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 
       createSolvers(system, masterActor)
 
-      pb.start()
+      //pb.start()
+      for(tuple <- createdWatchers)
+        tuple._2()
 
       Await.result(system.whenTerminated, Duration.Inf)
       watcher_thread.join()
@@ -193,9 +215,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   }
 }
 
-object SimpleRemoteSolverSystem extends App {
-  val hostname = args(0)
-  val port = Integer.parseInt(args(1))
+class SimpleRemoteSolverSystem(hostname: String, port: Int) {
   val config = ConfigFactory.parseString(s"""
        akka {
          actor {
@@ -415,3 +435,4 @@ object SolverActor {
   def props[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal], master: ActorRef): Props =
     Props(classOf[SolverActor[RetVal]], modelDeclaration, master)
 }
+
