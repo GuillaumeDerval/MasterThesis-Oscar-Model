@@ -65,7 +65,7 @@ abstract class DistributedCPApp[RetVal](md: ModelDeclaration with DecomposedCPSo
 
   completeConfig.subcommand match {
     case Some(completeConfig.master) =>
-      if(completeConfig.master.enableGUI.isDefined)
+      if(completeConfig.master.enableGUI())
         this.registerWatcher(SubproblemGraphicalProgressBar.getRegisterer._1, SubproblemGraphicalProgressBar.getRegisterer._2)
       //Nothing more to do here, the execution should continue in the subclass
     case Some(completeConfig.client) =>

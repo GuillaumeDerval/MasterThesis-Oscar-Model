@@ -28,6 +28,9 @@ case class DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) extends MasterToSol
 case class BoundUpdateMessage(newBound: Int) extends MasterToSolverMessage
 case class AllDoneMessage() extends MasterToSolverMessage with WatcherMessage
 
+case class HelloMessage() extends MasterToSolverMessage with SolverToMasterMessage
+case class StartMessage() extends MasterToSolverMessage
+
 class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
                               outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Runnable {
   override def run(): Unit = {

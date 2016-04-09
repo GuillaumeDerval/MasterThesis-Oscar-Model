@@ -23,6 +23,9 @@ import akka.remote.RemoteScope
 import misc.SearchStatistics
 
 import scala.collection.mutable.ListBuffer
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
 
 /**
   * A CPProgram that can distribute works among a cluster
@@ -41,6 +44,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 
   /**
     * Register a new watcher to be added when the solving begins
+    *
     * @param creator creates a new Watcher, given the subproblem list
     * @param initiator initiate the Watcher. Called after the resolution has begun.
     */
@@ -85,10 +89,8 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   def solveLocally(model: UninstantiatedModel, threadCount: Int, sppw: Int): SearchStatistics = {
     solve(model, sppw*threadCount,
       ConfigFactory.load(),
-      (system, masterActor) => {
-        for(i <- 0 until threadCount)
-          system.actorOf(SolverActor.props[RetVal](md, masterActor))
-      })
+      (system, masterActor) => List.fill(threadCount)(system.actorOf(SolverActor.props[RetVal](md, masterActor)))
+    )
   }
 
   /**
@@ -152,10 +154,11 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 
     solve(model, sppw*remoteHosts.length, config,
       (system, masterActor) => {
-        for((hostnameL, portL) <- remoteHosts) {
+        remoteHosts.map(t => {
+          val (hostnameL, portL) = t
           val address = Address("akka.tcp", "solving", hostnameL, portL)
           system.actorOf(SolverActor.props[RetVal](md, masterActor).withDeploy(Deploy(scope = RemoteScope(address))))
-        }
+        })
       }
     )
   }
@@ -169,9 +172,9 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param createSolvers function that creates SolverActor
     * @return
     */
-  def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => Unit): SearchStatistics = {
+  def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => List[ActorRef]): SearchStatistics = {
     modelDeclaration.applyFuncOnModel(model) {
-      val subproblems: List[(Map[IntVar, Int], SubproblemData)] = computeTimeTaken("Decomposition") {
+      val subproblems: List[(Map[IntVar, Int], SubproblemData)] = computeTimeTaken("decomposition", "solving") {
         getDecompositionStrategy.decompose(model, subproblemCount)
       }
       println("Subproblems: " + subproblems.length.toString)
@@ -190,26 +193,35 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
         (watcher, () => tuple._2(watcher))
       })
 
-      //val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.size, 0)
-      //pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
-
       val statWatcher = new StatisticsWatcher[RetVal]
       val watchers = createdWatchers.map(_._1).toArray ++ Array[Watcher[RetVal]](statWatcher)
       val watcher_thread = new Thread(new WatcherRunnable(watchers, outputQueue))
       watcher_thread.start()
 
-      val system = ActorSystem("solving", systemConfig)
-      val masterActor = system.actorOf(Props(new SolverMaster(md, queue, outputQueue)), "master")
+      val (system, masterActor, subsolvers) = computeTimeTaken("actor creation", "network") {
+        val system = ActorSystem("solving", systemConfig)
+        val masterActor = system.actorOf(Props(new SolverMaster(md, queue, outputQueue)), "master")
 
-      createSolvers(system, masterActor)
+        // Create solvers and wait for them to be started
+        val subsolvers = createSolvers(system, masterActor)
+        implicit val timeout = Timeout(2 minutes)
+        subsolvers.map((a) => a ? HelloMessage()).map((f) => Await.result(f, Duration.Inf))
+        (system, masterActor, subsolvers)
+      }
 
-      //pb.start()
       for(tuple <- createdWatchers)
         tuple._2()
 
-      Await.result(system.whenTerminated, Duration.Inf)
+      // Start solving
+      computeTimeTaken("solving", "solving") {
+        // TODO this maybe should be in SolverMaster
+        subsolvers.foreach((a) => a ! StartMessage())
+
+        Await.result(system.whenTerminated, Duration.Inf)
+      }
       watcher_thread.join()
 
+      showSummary()
       statWatcher.get
     }
   }
@@ -301,6 +313,7 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
     if (subproblemQueue.isEmpty) {
       if (!done) {
         broadcastRouter.route(AllDoneMessage(), self)
+        outputQueue.add(AllDoneMessage())
         context.system.terminate()
         done = true
       }
@@ -366,25 +379,21 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
   }
   //val search: oscar.algo.search.Branching = getSearch(cpmodel)
 
-  // Tell our master that we are waiting for a subproblem
-  master ! AwaitingSPMessage()
-
   /**
     * Process messages from master
     */
   def receive = {
-    case DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) => {
+    case m: HelloMessage => sender() ! m
+    case StartMessage() => master ! AwaitingSPMessage()
+    case DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) =>
       log.info("received subproblem")
       Future {
         solve_subproblem(spid, sp)
       }
-    }
-    case BoundUpdateMessage(newBound: Int) => {
+    case BoundUpdateMessage(newBound: Int) =>
       this.update_boundary(newBound)
-    }
-    case AllDoneMessage() => {
+    case AllDoneMessage() =>
       context.stop(self)
-    }
     case _ => log.info("received unknown message")
   }
 
