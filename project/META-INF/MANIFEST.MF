@@ -1,0 +1,36 @@
+Manifest-Version: 1.0
+Class-Path: xalan-2.7.0.jar scala-reflect-2.11.8.jar mbox2-1.0.jar log
+ kit-1.0.1.jar commons-beanutils-1.7.0.jar dom4j-1.6.1.jar scala-libra
+ ry-2.11.8.jar scala-swing_2.11-2.0.0-M2.jar oscar-cp_2.11-3.0.1.jar p
+ herd-1.0.jar servlet-api-2.3.jar gs-ui-1.3.jar jaxen-1.1-beta-8.jar f
+ ilters-2.0.235.jar json-lib-0.9.jar jdom-1.0.jar xom-1.1.jar oscar-ut
+ il_2.11-3.0.1.jar oscar-visual_2.11-3.0.1.jar swingx-ws-1.0.jar akka-
+ protobuf_2.11-2.4.3.jar jansi.jar jline.jar scala-compiler.jar scala-
+ library.jar scala-reflect.jar actions-0.13.8.jar api-0.13.8.jar apply
+ -macro-0.13.8.jar cache-0.13.8.jar classfile-0.13.8.jar classpath-0.1
+ 3.8.jar collections-0.13.8.jar command-0.13.8.jar compile-0.13.8.jar 
+ compiler-integration-0.13.8.jar compiler-ivy-integration-0.13.8.jar c
+ ompletion-0.13.8.jar control-0.13.8.jar cross-0.13.8.jar incremental-
+ compiler-0.13.8.jar io-0.13.8.jar ivy-0.13.8.jar ivy-2.3.0-sbt-fccfbd
+ 44c9f64523b61398a0155784dcbaeae28f.jar jawn-parser_2.10-0.6.0.jar jli
+ ne-2.11.jar jsch-0.1.46.jar json4s-ast_2.10-3.2.10.jar json4s-core_2.
+ 10-3.2.10.jar json4s-support_2.10-0.6.0.jar launcher-interface-0.13.8
+ .jar logging-0.13.8.jar logic-0.13.8.jar main-0.13.8.jar main-setting
+ s-0.13.8.jar paranamer-2.6.jar persist-0.13.8.jar process-0.13.8.jar 
+ quasiquotes_2.10-2.0.1.jar relation-0.13.8.jar run-0.13.8.jar sbinary
+ _2.10-0.4.2.jar sbt-0.13.8.jar scala-pickling_2.10-0.10.0.jar scala-r
+ eflect-2.10.4.jar serialization_2.10-0.1.1.jar task-system-0.13.8.jar
+  tasks-0.13.8.jar test-agent-0.13.8.jar test-interface-1.0.jar testin
+ g-0.13.8.jar tracking-0.13.8.jar interface-0.13.8.jar jfreechart-1.0.
+ 19.jar config-1.3.0.jar gs-algo-1.3.jar swingx-1.0.jar xmlParserAPIs-
+ 2.6.2.jar commons-logging-1.1.jar commons-lang-2.2.jar uncommons-math
+ s-1.2.2a.jar log4j-1.2.12.jar scala-xml_2.11-1.0.5.jar scala-parser-c
+ ombinators_2.11-1.0.4.jar ezmorph-0.8.1.jar junit-4.12.jar avalon-fra
+ mework-4.1.3.jar gs-core-1.3.jar commons-httpclient-3.0.1.jar akka-re
+ mote_2.11-2.4.3.jar rome-0.8.jar commons-math3-3.4.1.jar commons-math
+ -2.1.jar oscar-algo_2.11-3.0.1.jar jcommon-1.0.23.jar scala-java8-com
+ pat_2.11-0.7.0.jar akka-actor_2.11-2.4.3.jar netty-3.10.3.Final.jar j
+ tidy-4aug2000r7-dev.jar swing-worker-1.1.jar xercesImpl-2.8.1.jar sca
+ llop_2.11-1.0.0.jar hamcrest-core-1.3.jar commons-codec-1.3.jar
+Main-Class: GolombRuler
+
