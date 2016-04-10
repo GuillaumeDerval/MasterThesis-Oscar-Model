@@ -8,16 +8,15 @@ import solvers.cp.branchings.Branching
   * @tparam RetVal
   */
 trait CPSolve[RetVal] {
-  private var branching: Branching = null
-  private var on_solution: Model => RetVal = null
+  protected var branching: Branching = null
+  protected var on_solution: () => RetVal = null
 
   def getSearch = branching
   def setSearch(b: Branching): Unit = branching = b
   def setSearch(b: => Seq[oscar.algo.search.Alternative]): Unit = branching = Branching(b)
 
   def onSolution = on_solution
-  def onSolution(s: => RetVal): Unit = onSolution((a) => s)
-  def onSolution(o: Model => RetVal): Unit = on_solution = o
+  def onSolution(o: => RetVal): Unit = on_solution = () => o
 }
 
 

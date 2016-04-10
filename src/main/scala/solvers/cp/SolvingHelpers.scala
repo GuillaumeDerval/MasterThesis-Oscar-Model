@@ -7,6 +7,8 @@ import misc.SearchStatistics
 import models.{Model, ModelDeclaration}
 import solvers.cp.branchings.Branching
 
+import scala.collection.mutable.ListBuffer
+
 trait Watcher[RetVal] {
   def startedSubproblem(spid: Int): Unit
   def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit
@@ -50,8 +52,12 @@ class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
 
 class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
   var currentStatistics = new SearchStatistics(0, 0, 0, false, 0, 0, 0)
-  def get = currentStatistics
+  val results = ListBuffer[RetVal]()
+
+  def get = (currentStatistics, results.toList)
+
   override def startedSubproblem(spid: Int): Unit = {}
+
   override def newSolution(solution: RetVal, newBound: Option[Int]): Unit = {
     currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes,
       nFails = currentStatistics.nFails,
@@ -61,7 +67,9 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       maxTrailSize = currentStatistics.maxTrailSize,
       nSols = currentStatistics.nSols+1
     )
+    results += solution
   }
+
   override def allDone(): Unit = {
     currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes,
       nFails = currentStatistics.nFails,
@@ -72,6 +80,7 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       nSols = currentStatistics.nSols
     )
   }
+
   override def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit = {
     currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes+searchStats.nNodes,
       nFails = currentStatistics.nFails+searchStats.nFails,
@@ -99,9 +108,9 @@ class ModelProxy[CPModelType <: CPSolve[Retval], Retval](md: ModelDeclaration wi
   def getSearch = md.getSearch
   def setSearch(b: Branching): Unit = md.setSearch(b)
   def setSearch(b: => Seq[oscar.algo.search.Alternative]): Unit = md.setSearch(b)
+
   def onSolution = md.onSolution
   def onSolution(s: => Retval): Unit = md.onSolution(s)
-  def onSolution(o: Model => Retval): Unit = md.onSolution(o)
 
   def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
 }

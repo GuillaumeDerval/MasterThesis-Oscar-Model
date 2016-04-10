@@ -37,7 +37,7 @@ class CPProgram[RetVal](md: ModelDeclaration with CPSolve[RetVal] = new ModelDec
   def solve(model: InstantiatedCPModel): Unit = {
     //Start the solver
     modelDeclaration.applyFuncOnModel(model) {
-      model.cpSolver.onSolution {onSolution(model)}
+      model.cpSolver.onSolution {onSolution()}
       model.cpSolver.search(getSearch(model))
       println(model.cpSolver.start())
     }

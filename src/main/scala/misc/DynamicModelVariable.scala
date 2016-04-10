@@ -1,12 +1,16 @@
 package misc
 
 import java.io.{IOException, ObjectInputStream, ObjectOutputStream}
+
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+
 import scala.util.DynamicVariable
 import models.Model
 
 
 @SerialVersionUID(13l)
-class DynamicModelVariable() extends Serializable {
+class DynamicModelVariable() extends Serializable with KryoSerializable {
   private var v = new DynamicVariable[Model](null)
 
   def value: Model = v.value
@@ -29,5 +33,13 @@ class DynamicModelVariable() extends Serializable {
   @throws(classOf[IOException])
   private def readObject(in: ObjectInputStream): Unit = {
     v = new DynamicVariable[Model](in.readObject().asInstanceOf[Model])
+  }
+
+  override def write(kryo: Kryo, output: Output): Unit = {
+    kryo.writeClassAndObject(output, this.value)
+  }
+
+  override def read(kryo: Kryo, input: Input): Unit = {
+    v = new DynamicVariable[Model](kryo.readClassAndObject(input).asInstanceOf[Model])
   }
 }

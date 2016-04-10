@@ -63,7 +63,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param threadCount number of threads to use. By default, it is the number of available CPU
     * @return
     */
-  def solveLocally(threadCount: Int = Runtime.getRuntime.availableProcessors(), sppw: Int = 100): SearchStatistics = solveLocally(modelDeclaration.getCurrentModel, threadCount, sppw)
+  def solveLocally(threadCount: Int = Runtime.getRuntime.availableProcessors(), sppw: Int = 100): (SearchStatistics, List[RetVal]) = solveLocally(modelDeclaration.getCurrentModel, threadCount, sppw)
 
   /**
     * Starts the CPProgram locally on threadCount threads, on the current model
@@ -72,7 +72,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param threadCount number of threads to use
     * @return
     */
-  def solveLocally(model: Model, threadCount: Int, sppw: Int): SearchStatistics = {
+  def solveLocally(model: Model, threadCount: Int, sppw: Int): (SearchStatistics, List[RetVal]) = {
     model match {
       case m: UninstantiatedModel => solveLocally(m, threadCount, sppw)
       case _ => sys.error("The model is already instantiated")
@@ -86,7 +86,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param threadCount number of threads to use
     * @return
     */
-  def solveLocally(model: UninstantiatedModel, threadCount: Int, sppw: Int): SearchStatistics = {
+  def solveLocally(model: UninstantiatedModel, threadCount: Int, sppw: Int): (SearchStatistics, List[RetVal]) = {
     solve(model, sppw*threadCount,
       ConfigFactory.load(),
       (system, masterActor) => List.fill(threadCount)(system.actorOf(SolverActor.props[RetVal](md, masterActor)))
@@ -100,7 +100,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
     * @return
     */
-  def solveDistributed(remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int = 100): SearchStatistics = {
+  def solveDistributed(remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int = 100): (SearchStatistics, List[RetVal]) = {
     solveDistributed(modelDeclaration.getCurrentModel, remoteHosts, localhost, sppw)
   }
 
@@ -112,7 +112,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
     * @return
     */
-  def solveDistributed(model: Model, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): SearchStatistics = {
+  def solveDistributed(model: Model, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): (SearchStatistics, List[RetVal]) = {
     model match {
       case m: UninstantiatedModel => solveDistributed(m, remoteHosts, localhost, sppw)
       case _ => sys.error("The model is already instantiated")
@@ -127,30 +127,9 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param localhost tupe (hostname, port) on which the local ActorSystem will be contacted by remote Actors
     * @return
     */
-  def solveDistributed(model: UninstantiatedModel, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): SearchStatistics = {
+  def solveDistributed(model: UninstantiatedModel, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): (SearchStatistics, List[RetVal]) = {
     val (hostname, port) = localhost
-    val config = ConfigFactory.parseString(s"""
-       akka {
-         actor {
-           provider = "akka.remote.RemoteActorRefProvider"
-           serializers {
-             java = "akka.serialization.JavaSerializer"
-             proto = "akka.remote.serialization.ProtobufSerializer"
-           }
-           serialization-bindings {
-             "models.Model" = java
-             "models.ModelDeclaration" = java
-           }
-         }
-         remote {
-           enabled-transports = ["akka.remote.netty.tcp"]
-           netty.tcp {
-             hostname = "$hostname"
-             port = $port
-           }
-         }
-       }
-     """)
+    val config = AkkaConfigCreator(hostname, port)
 
     solve(model, sppw*remoteHosts.length, config,
       (system, masterActor) => {
@@ -172,7 +151,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param createSolvers function that creates SolverActor
     * @return
     */
-  def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => List[ActorRef]): SearchStatistics = {
+  def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => List[ActorRef]): (SearchStatistics, List[RetVal]) = {
     modelDeclaration.applyFuncOnModel(model) {
       val subproblems: List[(Map[IntVar, Int], SubproblemData)] = computeTimeTaken("decomposition", "solving") {
         getDecompositionStrategy.decompose(model, subproblemCount)
@@ -228,10 +207,25 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 }
 
 class SimpleRemoteSolverSystem(hostname: String, port: Int) {
-  val config = ConfigFactory.parseString(s"""
+  val system = ActorSystem("solving", AkkaConfigCreator(hostname, port))
+  Await.result(system.whenTerminated, Duration.Inf)
+}
+
+private object AkkaConfigCreator {
+  def apply(hostname: String, port: Int): Config = {
+    ConfigFactory.parseString(s"""
        akka {
          actor {
            provider = "akka.remote.RemoteActorRefProvider"
+           serializers {
+             java = "akka.serialization.JavaSerializer"
+             kryo = "com.twitter.chill.akka.AkkaSerializer"
+           }
+           serialization-bindings {
+             "solvers.cp.SolvingMessage" = java
+             "models.Model" = java
+             "models.ModelDeclaration" = kryo
+           }
          }
          remote {
            enabled-transports = ["akka.remote.netty.tcp"]
@@ -240,14 +234,9 @@ class SimpleRemoteSolverSystem(hostname: String, port: Int) {
              port = $port
            }
          }
-         serializers {
-           java = "akka.serialization.JavaSerializer"
-           proto = "akka.remote.serialization.ProtobufSerializer"
-         }
        }
      """)
-  val system = ActorSystem("solving", config)
-  Await.result(system.whenTerminated, Duration.Inf)
+  }
 }
 
 /**
@@ -295,8 +284,9 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
       context.sender() ! BoundUpdateMessage(get_boundary()) //ensure the new member has the last bound
       sendNextJob(sender)
     case a: DoneMessage =>
-      sendNextJob(sender)
       outputQueue.add(a)
+      sendNextJob(sender)
+
     case SolutionMessage(solution, Some(b)) =>
       broadcastRouter.route(BoundUpdateMessage(b), self)
       outputQueue.add(SolutionMessage(solution, Some(b)))
@@ -354,23 +344,25 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     case _ => null
   }
 
+  val on_solution: () => RetVal = modelDeclaration.onSolution
+
   val solution: Model => Unit = cpmodel.optimisationMethod match {
     case m: Minimisation =>
       log.info("MIN")
       (a) => {
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
-        master ! SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max))
+        master ! SolutionMessage(on_solution(), Some(v.max))
       }
     case m: Maximisation =>
       log.info("MAX")
       (a) => {
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
-        master ! SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max))
+        master ! SolutionMessage(on_solution(), Some(v.max))
 
       }
-    case _ => (a) => master ! SolutionMessage(modelDeclaration.onSolution(cpmodel), None)
+    case _ => (a) => master ! SolutionMessage(on_solution(), None)
   }
 
   val search: oscar.algo.search.Branching = objv match {

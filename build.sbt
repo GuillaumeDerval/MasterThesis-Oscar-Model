@@ -20,6 +20,8 @@ libraryDependencies += "org.scala-lang.modules" % "scala-swing_2.11" % "2.0.0-M2
 
 libraryDependencies += "com.typesafe.akka" %% "akka-actor" % "2.4.3"
 libraryDependencies += "com.typesafe.akka" %% "akka-remote" % "2.4.3"
+libraryDependencies += "com.twitter" % "chill-akka_2.11" % "0.8.0"
+libraryDependencies += "org.scala-lang.modules" %% "spores-core" % "0.2.1"
 
 libraryDependencies += "oscar" % "oscar-algo_2.11" % "3.0.1"
 libraryDependencies += "oscar" % "oscar-cp_2.11" % "3.0.1"

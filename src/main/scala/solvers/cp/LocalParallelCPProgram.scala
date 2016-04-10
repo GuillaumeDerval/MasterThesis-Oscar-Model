@@ -24,16 +24,16 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
   def setDecompositionStrategy(d: DecompositionStrategy): Unit = md.setDecompositionStrategy(new DecompositionStrategyToClosureConverter(d))
   def getDecompositionStrategy: ClosureDecompositionStrategy = md.getDecompositionStrategy
 
-  def solve(): SearchStatistics = solve(modelDeclaration.getCurrentModel)
+  def solve(): (SearchStatistics, List[RetVal]) = solve(modelDeclaration.getCurrentModel)
 
-  def solve(model: Model): SearchStatistics = {
+  def solve(model: Model): (SearchStatistics, List[RetVal]) = {
     model match {
       case m: UninstantiatedModel => solve(m)
       case _ => sys.error("The model is already instantiated")
     }
   }
 
-  def solve(model: UninstantiatedModel): SearchStatistics = {
+  def solve(model: UninstantiatedModel): (SearchStatistics, List[RetVal]) = {
 
     val subproblems = computeTimeTaken("Decomposition"){/*Random.shuffle(*/getDecompositionStrategy.decompose(model, subproblemsCount)/*)*/}
 
@@ -87,9 +87,9 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
           case Some(bm) => (a) => {
             val v = cpmodel.getRepresentative(objv)
             bm.update_boundary(v.max)
-            outputQueue.add(SolutionMessage(modelDeclaration.onSolution(cpmodel), Some(v.max)))
+            outputQueue.add(SolutionMessage(modelDeclaration.onSolution(), Some(v.max)))
           }
-          case _ => (a) => outputQueue.add(SolutionMessage(modelDeclaration.onSolution(cpmodel), None))
+          case _ => (a) => outputQueue.add(SolutionMessage(modelDeclaration.onSolution(), None))
         }
 
         //TODO: test without this

@@ -79,16 +79,16 @@ abstract class DistributedCPApp[RetVal](md: ModelDeclaration with DecomposedCPSo
   }
 
 
-  def solve(): SearchStatistics = solve(modelDeclaration.getCurrentModel)
+  def solve(): (SearchStatistics, List[RetVal]) = solve(modelDeclaration.getCurrentModel)
 
-  def solve(model: Model): SearchStatistics = {
+  def solve(model: Model): (SearchStatistics, List[RetVal]) = {
     model match {
       case m: UninstantiatedModel => solve(m)
       case _ => sys.error("The model is already instantiated")
     }
   }
 
-  def solve(model: UninstantiatedModel): SearchStatistics = {
+  def solve(model: UninstantiatedModel): (SearchStatistics, List[RetVal]) = {
     if(completeConfig.master.remoteList.isDefined || completeConfig.master.remoteFile.isDefined) {
       super.solveDistributed(model,
         completeConfig.master.remoteList.get.getOrElse(completeConfig.master.remoteFile()),
