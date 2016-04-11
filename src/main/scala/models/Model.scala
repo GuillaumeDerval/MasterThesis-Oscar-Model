@@ -1,7 +1,7 @@
 package models
 
 import constraints.Constraint
-import misc.{ModelVarStorage, UnionFindStorage}
+import misc.{ModelVarStorage}
 import vars._
 
 /**
@@ -11,8 +11,7 @@ trait Model extends Serializable {
   type IntVarImplementation <: IntVarImplem
 
   val declaration: ModelDeclaration
-  val parent: Option[Model]
-  val intRepresentatives: ModelVarStorage[IntVar, IntVarImplementation]
+  var intRepresentatives: ModelVarStorage[IntVar, IntVarImplementation]
   var optimisationMethod: OptimisationMethod
 
   /**
@@ -20,7 +19,11 @@ trait Model extends Serializable {
    * @param domain: an IntVarImplementation
    * @return the id to the newly created variable
    */
-  def addNewRepresentative(domain: IntVarImplementation): Int = intRepresentatives.add(domain)
+  def addNewRepresentative(domain: IntVarImplementation): Int = {
+    val r = intRepresentatives.add(domain)
+    intRepresentatives = r._2
+    r._1
+  }
 
   /**
    * Get implementation of a Var

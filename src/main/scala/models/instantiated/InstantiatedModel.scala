@@ -1,6 +1,6 @@
 package models.instantiated
 
-import misc.{ModelVarStorage, UnionFindStorage}
+import misc.{ModelVarStorage}
 import models.uninstantiated.UninstantiatedModel
 import models.{Model, ModelDeclaration, OptimisationMethod}
 import vars.IntVar
@@ -11,9 +11,8 @@ import vars.domainstorage.int._
  * A trait representing all instantiated models
  */
 abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
-  override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
-  override val intRepresentatives: ModelVarStorage[IntVar, IntVarImplementation] = ModelVarStorage[IntVar, IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
+  override var intRepresentatives: ModelVarStorage[IntVar, IntVarImplementation] = ModelVarStorage[IntVar, IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
   override var optimisationMethod: OptimisationMethod = p.optimisationMethod
 
   for(c <- p.constraints)

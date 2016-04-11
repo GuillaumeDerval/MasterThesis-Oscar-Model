@@ -1,5 +1,6 @@
 package misc
 
+import sun.jvm.hotspot.utilities.GenericArray
 import vars.Var
 
 import scala.collection.mutable
@@ -11,7 +12,7 @@ object ModelVarStorage {
     * @tparam VarType Var type that will store its domain in this object
     * @tparam StoredObject type of domain
     */
-  def apply[VarType <: Var, StoredObject]() = new ModelVarStorage[VarType, StoredObject](new ArrayBuffer[StoredObject])
+  def apply[VarType <: Var, StoredObject]() = new ModelVarStorage[VarType, StoredObject](IndexedSeq[StoredObject]())
 
   /**
     * Init this ModelVarStorage with a copy of the content of another one, with a type conversion
@@ -22,21 +23,13 @@ object ModelVarStorage {
     val map = mutable.Map[OldType, StoredObject]()
     new ModelVarStorage[VarType, StoredObject](to_copy.array.map(item => map.getOrElseUpdate(item, convert(item))))
   }
-
-  /**
-    * Copy a ModelVarStorage
-    * @param to_copy ModelVarStorage to be copied
-    */
-  def apply[VarType <: Var, StoredType](to_copy: ModelVarStorage[VarType, StoredType]) = {
-    new ModelVarStorage[VarType, StoredType](to_copy.array.clone())
-  }
 }
 
 /**
   * Stores variable domains (and allow to replace/union domains)
-  * Mostly immutable: once a variable is added, it cannot be remove or changed in this object, a new one must be created
+  * Immutable
   */
-class ModelVarStorage[VarType <: Var, StoredObject](private val array: ArrayBuffer[StoredObject]) {
+class ModelVarStorage[VarType <: Var, StoredObject](private val array: IndexedSeq[StoredObject]) {
   /**
     * Get the domain of `v`
     * @param v the variable of which we want to find the domain
@@ -54,10 +47,9 @@ class ModelVarStorage[VarType <: Var, StoredObject](private val array: ArrayBuff
     * @param elem domain to be added
     * @return the id of the element, to be used by the var as internal value
     */
-  def add(elem: StoredObject): Int = {
+  def add(elem: StoredObject): (Int, ModelVarStorage[VarType, StoredObject]) = {
     val newid = array.length
-    array.append(elem)
-    newid
+    (newid, new ModelVarStorage[VarType, StoredObject](array :+ elem))
   }
 
   /**

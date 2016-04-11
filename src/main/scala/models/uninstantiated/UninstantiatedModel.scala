@@ -11,13 +11,13 @@ import scala.collection.mutable
  */
 abstract class UninstantiatedModel extends Model {
   override type IntVarImplementation = IntDomainStorage
-  val constraints = new mutable.MutableList[Constraint]
+  var constraints: List[Constraint]
 
   /**
    * Post a new constraint
    * @param constraint
    */
-  def post(constraint: Constraint): Unit = constraints += constraint
+  def post(constraint: Constraint): Unit = constraints = constraint :: constraints
 
   override protected def optimisationMethodUpdated(): Unit = {}
 }
