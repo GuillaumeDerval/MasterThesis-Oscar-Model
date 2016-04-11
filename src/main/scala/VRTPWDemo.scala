@@ -1,14 +1,14 @@
 import algebra.Sum
 import constraints._
 import solvers.cp
-import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
+import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
-import scala.spores._
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
+import scala.spores._
 
 object GolombRuler extends DistributedCPApp[String] with App {
   override lazy val config = new DistributedCPAppConfig {

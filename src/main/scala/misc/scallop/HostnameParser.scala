@@ -2,8 +2,6 @@ package misc.scallop
 
 import java.io.File
 
-import org.rogach.scallop.ValueConverter
-
 /**
   * Specific converter for Scallop and hostname:port pairs
   */

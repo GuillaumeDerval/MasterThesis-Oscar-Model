@@ -1,7 +1,5 @@
 package vars
 
-import misc.EmptyDomainException
-
 import scala.util.Random
 
 /**

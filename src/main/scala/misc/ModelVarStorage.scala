@@ -1,10 +1,8 @@
 package misc
 
-import sun.jvm.hotspot.utilities.GenericArray
 import vars.Var
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 object ModelVarStorage {
   /**

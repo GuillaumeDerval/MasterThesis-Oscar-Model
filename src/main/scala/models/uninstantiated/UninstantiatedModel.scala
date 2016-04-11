@@ -4,8 +4,6 @@ import constraints.Constraint
 import models.Model
 import vars.domainstorage.int.IntDomainStorage
 
-import scala.collection.mutable
-
 /**
  * Represent any non-instantiated model. An UninstantiatedModel is exportable and importable
  */

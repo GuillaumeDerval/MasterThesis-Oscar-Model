@@ -1,7 +1,5 @@
 package vars.domainstorage.int
 
-import misc.EmptyDomainException
-
 import scala.util.Random
 
 /**

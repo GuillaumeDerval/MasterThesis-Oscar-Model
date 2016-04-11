@@ -1,7 +1,5 @@
 package vars.cp.int
 
-import misc.EmptyDomainException
-import oscar.cp.core.CPOutcome
 import vars.IntVarImplem
 import vars.cp.CPVar
 import vars.domainstorage.int._

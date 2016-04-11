@@ -1,6 +1,6 @@
 package models.instantiated
 
-import misc.{ModelVarStorage}
+import misc.ModelVarStorage
 import models.uninstantiated.UninstantiatedModel
 import models.{Model, ModelDeclaration, OptimisationMethod}
 import vars.IntVar

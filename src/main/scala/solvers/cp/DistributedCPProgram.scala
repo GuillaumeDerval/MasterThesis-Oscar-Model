@@ -2,11 +2,15 @@ package solvers.cp
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.actor._
 import akka.event.Logging
+import akka.pattern.ask
+import akka.remote.RemoteScope
 import akka.routing.{BroadcastRoutingLogic, Router}
+import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
 import misc.ComputeTimeTaken._
+import misc.SearchStatistics
 import misc.TimeHelper._
 import models._
 import models.instantiated.InstantiatedCPModel
@@ -16,16 +20,9 @@ import oscar.cp.{CPIntVar, TightenType}
 import solvers.cp.decompositions.DecompositionStrategy
 import vars.IntVar
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import akka.actor.{Address, Deploy, Props}
-import akka.remote.RemoteScope
-import misc.SearchStatistics
-
 import scala.collection.mutable.ListBuffer
-import akka.pattern.ask
-import akka.util.Timeout
-import scala.concurrent.duration._
+import scala.concurrent.duration.{Duration, _}
+import scala.concurrent.{Await, Future}
 
 /**
   * A CPProgram that can distribute works among a cluster

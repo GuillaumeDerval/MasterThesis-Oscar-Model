@@ -2,8 +2,8 @@ package solvers.cp
 
 import misc.SearchStatistics
 import misc.scallop.HostnameParser
-import models.{Model, ModelDeclaration}
 import models.uninstantiated.UninstantiatedModel
+import models.{Model, ModelDeclaration}
 import org.rogach.scallop._
 
 /**

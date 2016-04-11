@@ -1,8 +1,8 @@
 package models.uninstantiated
 
 import constraints.Constraint
-import misc.{ModelVarStorage}
-import models.{Model, ModelDeclaration, OptimisationMethod}
+import misc.ModelVarStorage
+import models.{ModelDeclaration, OptimisationMethod}
 import vars.IntVar
 import vars.domainstorage.int.IntDomainStorage
 

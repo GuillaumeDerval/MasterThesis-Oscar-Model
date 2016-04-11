@@ -7,7 +7,6 @@ import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.int.IntDomainStorage
 
 import scala.collection.immutable.SortedSet
-import scala.collection.mutable
 import scala.util.Random
 
 /**

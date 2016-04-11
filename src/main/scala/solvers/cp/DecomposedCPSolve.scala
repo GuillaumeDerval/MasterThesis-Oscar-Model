@@ -2,8 +2,6 @@ package solvers.cp
 
 import solvers.cp.decompositions.DecompositionStrategy
 
-import scala.spores._
-
 
 /**
   * Allow to decompose into subproblems for solving in a distributed environment

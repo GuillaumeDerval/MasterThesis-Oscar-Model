@@ -4,9 +4,9 @@ import java.io.{IOException, ObjectInputStream, ObjectOutputStream}
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import models.Model
 
 import scala.util.DynamicVariable
-import models.Model
 
 
 @SerialVersionUID(13l)

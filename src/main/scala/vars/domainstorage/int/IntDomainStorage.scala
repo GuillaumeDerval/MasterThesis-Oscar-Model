@@ -4,7 +4,6 @@ import vars.IntVarImplem
 import vars.domainstorage.DomainStorage
 
 import scala.collection.immutable.SortedSet
-import scala.collection.mutable
 
 trait IntDomainStorage extends DomainStorage with IntVarImplem {}
 

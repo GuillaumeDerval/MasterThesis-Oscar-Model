@@ -1,7 +1,7 @@
 package models
 
 import constraints.Constraint
-import misc.{ModelVarStorage}
+import misc.ModelVarStorage
 import vars._
 
 /**

@@ -1,9 +1,6 @@
 package vars.domainstorage.int
 
-import misc.EmptyDomainException
-
 import scala.collection.immutable.SortedSet
-import scala.collection.mutable
 import scala.util.Random
 
 /**

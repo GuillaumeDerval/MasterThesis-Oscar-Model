@@ -1,7 +1,7 @@
 package models
 
 import constraints.Constraint
-import misc.{DynamicModelVariable}
+import misc.DynamicModelVariable
 import models.uninstantiated.BaseModel
 import vars.IntVar
 

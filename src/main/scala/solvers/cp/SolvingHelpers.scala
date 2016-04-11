@@ -4,7 +4,7 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import constraints.Constraint
 import misc.SearchStatistics
-import models.{Model, ModelDeclaration}
+import models.ModelDeclaration
 import solvers.cp.branchings.Branching
 
 import scala.collection.mutable.ListBuffer
