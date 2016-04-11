@@ -1,15 +1,12 @@
 import algebra.Sum
 import constraints._
 import solvers.cp
-import solvers.cp.{DistributedCPApp, DistributedCPAppConfig, DistributedCPProgram}
+import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
 import vars.IntVar
 import scala.spores._
 
-//import oscar.visual.VisualFrame
-//import oscar.visual.VisualTour
-//import oscar.visual.VisualUtil
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
@@ -60,30 +57,13 @@ object GolombRuler extends DistributedCPApp[String] with App {
 
   post(m(n-1) < 120)
 
-  val my_on_solution = () => {
-    println("something")
-    val v = this.m.map(_.max).mkString(",")
-    println("something else")
-    v
-  }
-
-  val my_on_solution_spore = spore {
+  onSolution(spore {
     val m_ = m
     () => {
-      println("something")
       val v = m_.map(_.max).mkString(",")
-      println("something else")
       v
     }
-  }
-
-  //onSolution({
-  //  my_on_solution_spore()
-  //})
-
-  onSolution {
-    my_on_solution()
-  }
+  })
 
   setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
   val (stats, solutions) = solve()

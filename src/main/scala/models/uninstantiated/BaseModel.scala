@@ -10,6 +10,6 @@ import vars.domainstorage.int.IntDomainStorage
   */
 class BaseModel(val declaration: ModelDeclaration) extends UninstantiatedModel {
   override val parent: Option[Model] = None
-  override val intRepresentatives: UnionFindStorage[IntDomainStorage] = UnionFindStorage[IntDomainStorage]()
+  val intRepresentatives: UnionFindStorage[IntDomainStorage] = UnionFindStorage[IntDomainStorage]()
   override var optimisationMethod: OptimisationMethod = new NoOptimisation
 }

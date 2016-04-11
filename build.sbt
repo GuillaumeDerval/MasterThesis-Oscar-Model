@@ -6,7 +6,10 @@ scalaVersion := "2.11.8"
 
 resolvers += "Artifactory-UCL" at "http://artifactory.info.ucl.ac.be/artifactory/libs-release-local/"
 
+libraryDependencies += "jaxen" % "jaxen" % "1.1.6"
+
 libraryDependencies += "org.scala-lang" % "scala-reflect" % "2.11.8"
+libraryDependencies += "org.scala-lang.modules" % "scala-xml_2.11" % "1.0.5"
 
 libraryDependencies += "org.graphstream" % "gs-core" % "1.3"
 libraryDependencies += "org.graphstream" % "gs-algo" % "1.3"

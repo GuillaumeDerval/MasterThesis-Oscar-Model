@@ -8,6 +8,7 @@ import models.{Model, ModelDeclaration}
 import solvers.cp.branchings.Branching
 
 import scala.collection.mutable.ListBuffer
+import scala.spores.NullarySpore
 
 trait Watcher[RetVal] {
   def startedSubproblem(spid: Int): Unit
@@ -111,6 +112,7 @@ class ModelProxy[CPModelType <: CPSolve[Retval], Retval](md: ModelDeclaration wi
 
   def onSolution = md.onSolution
   def onSolution(s: => Retval): Unit = md.onSolution(s)
+  def onSolution(s: NullarySpore[Retval]): Unit = md.onSolution(s())
 
   def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
 }
