@@ -36,7 +36,7 @@ trait Model extends Serializable {
    * Apply a function on this model
    * @param func
    */
-  def apply(func: => Unit): Unit = declaration.applyFuncOnModel(this)(func)
+  def apply[R](func: => R): R = declaration.applyFuncOnModel(this)(func)
 
   /**
    * Post a new constraint
