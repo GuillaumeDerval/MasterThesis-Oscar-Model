@@ -124,47 +124,6 @@ trait IntVarLike extends Iterable[Int] {
   }
 
   /**
-   * Reduce the domain to the singleton {val}. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException
-   */
-  def assign(value: Int): Unit
-
-  /**
-   * Remove from the domain all values < val. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  def updateMin(value: Int): Unit
-
-  /**
-   * Remove from the domain all values > val. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  def updateMax(value: Int): Unit
-
-  /**
-   * Remove val from the domain. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  def removeValue(value: Int): Unit
-
-  /**
-   * Remove values from the domain. If this variable is instantiated, linked propagators are called.
-   * @param values: values to remove
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  def removeValues(values: Array[Int], nValues: Int): Unit = {
-    var i = nValues
-    while (i > 0) {
-      i -= 1
-      removeValue(values(i))
-    }
-  }
-
-  /**
    * Return a representative name for this var(-like), if one was given
    */
   def getRepresentativeName: Option[String]

@@ -6,6 +6,7 @@ import models.ModelDeclaration
 import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.int.IntDomainStorage
 
+import scala.collection.immutable.SortedSet
 import scala.collection.mutable
 import scala.util.Random
 
@@ -19,16 +20,12 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
   protected def getRepresentative: IntVarImplem = model_decl.getCurrentModel.getRepresentative(this).asInstanceOf[IntVarImplem]
   override def isBound: Boolean = getRepresentative.isBound
   override def randomValue(implicit rand: Random): Int = getRepresentative.randomValue(rand)
-  override def updateMin(value: Int): Unit = getRepresentative.updateMin(value)
   override def max: Int = getRepresentative.max
   override def valueBefore(value: Int): Option[Int] = getRepresentative.valueBefore(value)
   override def min: Int = getRepresentative.min
-  override def assign(value: Int): Unit = getRepresentative.assign(value)
   override def valueAfter(value: Int): Option[Int] = getRepresentative.valueAfter(value)
   override def iterator: Iterator[Int] = getRepresentative.iterator
   override def hasValue(value: Int): Boolean = getRepresentative.hasValue(value)
-  override def removeValue(value: Int): Unit = getRepresentative.removeValue(value)
-  override def updateMax(value: Int): Unit = getRepresentative.updateMax(value)
   override def getRepresentativeName: Option[String] = getRepresentative.getRepresentativeName
 
   override def reify()(implicit modelDeclaration: ModelDeclaration): IntVar = this
@@ -48,7 +45,7 @@ object IntVar {
     new IntVar(model_decl, IntDomainStorage(content))
   }
 
-  def apply(content: mutable.SortedSet[Int])(implicit model_decl: ModelDeclaration) = {
+  def apply(content: SortedSet[Int])(implicit model_decl: ModelDeclaration) = {
     new IntVar(model_decl, IntDomainStorage(content))
   }
 
@@ -64,7 +61,7 @@ object IntVar {
     new IntVar(model_decl, IntDomainStorage(content, name))
   }
 
-  def apply(content: mutable.SortedSet[Int], name: Option[String])(implicit model_decl: ModelDeclaration) = {
+  def apply(content: SortedSet[Int], name: Option[String])(implicit model_decl: ModelDeclaration) = {
     new IntVar(model_decl, IntDomainStorage(content, name))
   }
 

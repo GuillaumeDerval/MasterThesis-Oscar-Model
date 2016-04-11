@@ -40,17 +40,6 @@ class CPIntVarImplem(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) e
   override def randomValue(implicit rand: Random): Int = realCPVar.randomValue(rand)
 
   /**
-    * Remove from the domain all values < val. If this variable is instantiated, linked propagators are called.
-    * @param value
-    * @throws EmptyDomainException: if the domain becomes empty
-    */
-  override def updateMin(value: Int): Unit = {
-    val outcome = realCPVar.updateMin(value)
-    if(outcome == CPOutcome.Failure)
-      throw new EmptyDomainException
-  }
-
-  /**
     * @return  the maximum value in the domain
     */
   override def max: Int = realCPVar.max
@@ -72,17 +61,6 @@ class CPIntVarImplem(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) e
   override def min: Int = realCPVar.min
 
   /**
-    * Reduce the domain to the singleton {val}. If this variable is instantiated, linked propagators are called.
-    * @param value
-    * @throws EmptyDomainException
-    */
-  override def assign(value: Int): Unit = {
-    val outcome = realCPVar.assign(value)
-    if(outcome == CPOutcome.Failure)
-      throw new EmptyDomainException
-  }
-
-  /**
     * @param value
     * @return the smallest value > val in the domain, None if there is not value > val in the domain
     */
@@ -96,26 +74,4 @@ class CPIntVarImplem(notInstantied: IntDomainStorage, store: oscar.cp.CPStore) e
     * @return  true if the domain contains the value val, false otherwise
     */
   override def hasValue(value: Int): Boolean = realCPVar.hasValue(value)
-
-  /**
-    * Remove val from the domain. If this variable is instantiated, linked propagators are called.
-    * @param value
-    * @throws EmptyDomainException: if the domain becomes empty
-    */
-  override def removeValue(value: Int): Unit = {
-    val outcome = realCPVar.removeValue(value)
-    if(outcome == CPOutcome.Failure)
-      throw new EmptyDomainException
-  }
-
-  /**
-    * Remove from the domain all values > val. If this variable is instantiated, linked propagators are called.
-    * @param value
-    * @throws EmptyDomainException: if the domain becomes empty
-    */
-  override def updateMax(value: Int): Unit = {
-    val outcome = realCPVar.updateMax(value)
-    if(outcome == CPOutcome.Failure)
-      throw new EmptyDomainException
-  }
 }

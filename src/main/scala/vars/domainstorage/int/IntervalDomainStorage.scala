@@ -9,7 +9,7 @@ import scala.util.Random
  * @param min_value: the minimum value (inclusive)
  * @param max_value: the maximum value (inclusive)
  */
-class IntervalDomainStorage(private var min_value: Int, private var max_value: Int, private val repr_name: Option[String] = None) extends IntDomainStorage {
+class IntervalDomainStorage(min_value: Int, max_value: Int, repr_name: Option[String] = None) extends IntDomainStorage {
   /**
    * @return true if the domain of the variable has exactly one value, false if the domain has more than one value
    */
@@ -45,60 +45,6 @@ class IntervalDomainStorage(private var min_value: Int, private var max_value: I
    * @return  true if the domain contains the value val, false otherwise
    */
   override def hasValue(value: Int): Boolean = value >= min_value && value <= max_value
-
-  /**
-   * Reduce the domain to the singleton {val}. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException
-   */
-  override def assign(value: Int): Unit = {
-    if (min_value <= value && value <= max_value) {
-      min_value = value
-      max_value = value
-    }
-    else
-      throw new EmptyDomainException()
-  }
-
-  /**
-   * Remove from the domain all values < val. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  override def updateMin(value: Int): Unit = {
-    if (value > max_value)
-      throw new EmptyDomainException()
-    min_value = value
-  }
-
-  /**
-   * Remove from the domain all values > val. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  override def updateMax(value: Int): Unit = {
-    if (value < min_value)
-      throw new EmptyDomainException()
-    max_value = value
-  }
-
-  /**
-   * Remove val from the domain. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   * @throws CannotBecomeSparseException: as this implementation cannot become sparse,
-   *                                    it will launch an exception when you attempt to do that.
-   */
-  override def removeValue(value: Int): Unit = {
-    if (min_value == max_value && min_value == value)
-      throw new EmptyDomainException()
-    if (min_value == value)
-      min_value = value + 1
-    else if (max == value)
-      max_value = value - 1
-    else
-      throw new CannotBecomeSparseException
-  }
 
   /**
    * @return  the maximum value in the domain

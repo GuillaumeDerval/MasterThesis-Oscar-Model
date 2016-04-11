@@ -1,7 +1,5 @@
 package vars
 
-import misc.EmptyDomainException
-
 /**
  * A trait that all objects that behave like a BoolVar should implement
  */
@@ -14,18 +12,6 @@ trait BoolVarLike extends IntVarLike
 
   /** @return true if the variable is bound and bound to value 0 */
   def isFalse: Boolean = isBoundTo(0)
-
-  /**
-   * Assigns the variable to true.
-   * @throws EmptyDomainException
-   */
-  def assignTrue(): Unit = assign(1)
-
-  /**
-   * Assigns the variable to false.
-   * @throws EmptyDomainException
-   */
-  def assignFalse(): Unit = assign(0)
 
   /** Returns `true` if the domain contains 1. */
   def containsTrue: Boolean = max == 1

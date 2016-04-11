@@ -9,7 +9,7 @@ import scala.util.Random
  * Note: this class supports IntervalDomainStorage, SetDomainStorage, and SingletonDomainStorage
  * @param content: another domain to proxy
  */
-class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomainStorage {
+class AdaptableIntDomainStorage(val content: IntDomainStorage) extends IntDomainStorage {
   //Check type
   if (!content.isInstanceOf[IntervalDomainStorage] && !content.isInstanceOf[SetDomainStorage] &&
     !content.isInstanceOf[SingletonDomainStorage])
@@ -55,65 +55,6 @@ class AdaptableIntDomainStorage(var content: IntDomainStorage) extends IntDomain
    * @return  true if the domain contains the value val, false otherwise
    */
   override def hasValue(value: Int): Boolean = content.hasValue(value)
-
-  /**
-   * Reduce the domain to the singleton {val}. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the initial do not contain val
-   */
-  override def assign(value: Int): Unit = {
-    if (content.hasValue(value)) content = new SingletonDomainStorage(value, getRepresentativeName)
-    else throw new EmptyDomainException()
-  }
-
-  /**
-   * Remove from the domain all values < val. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  override def updateMin(value: Int): Unit = {
-    content.updateMin(value)
-    simplify()
-  }
-
-  /**
-   * Remove from the domain all values > val. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  override def updateMax(value: Int): Unit = {
-    content.updateMax(value)
-    simplify()
-  }
-
-  /**
-   * Tries to simplify the way the data is stored
-   */
-  private def simplify() = {
-    if (content.isInstanceOf[SetDomainStorage]) {
-      if (content.size == 1)
-        content = new SingletonDomainStorage(content.min, getRepresentativeName)
-      else if (content.isContinuous)
-        content = new IntervalDomainStorage(content.min, content.max, getRepresentativeName)
-    }
-  }
-
-  /**
-   * Remove val from the domain. If this variable is instantiated, linked propagators are called.
-   * @param value
-   * @throws EmptyDomainException: if the domain becomes empty
-   */
-  override def removeValue(value: Int): Unit = {
-    try {
-      content.removeValue(value)
-    }
-    catch {
-      case e: CannotBecomeSparseException =>
-        content = new SetDomainStorage(content.toSet, getRepresentativeName)
-        content.removeValue(value)
-    }
-    simplify()
-  }
 
   /**
    * Returns a copy of the same type as the current one
