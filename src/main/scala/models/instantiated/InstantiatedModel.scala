@@ -1,8 +1,9 @@
 package models.instantiated
 
-import misc.UnionFindStorage
+import misc.{ModelVarStorage, UnionFindStorage}
 import models.uninstantiated.UninstantiatedModel
 import models.{Model, ModelDeclaration, OptimisationMethod}
+import vars.IntVar
 import vars.domainstorage.DomainStorage
 import vars.domainstorage.int._
 
@@ -12,7 +13,7 @@ import vars.domainstorage.int._
 abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
-  override val intRepresentatives: UnionFindStorage[IntVarImplementation] = UnionFindStorage[IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
+  override val intRepresentatives: ModelVarStorage[IntVar, IntVarImplementation] = ModelVarStorage[IntVar, IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
   override var optimisationMethod: OptimisationMethod = p.optimisationMethod
 
   for(c <- p.constraints)
@@ -20,16 +21,13 @@ abstract class InstantiatedModel(p: UninstantiatedModel) extends Model {
 
   protected def instantiateDomainStorage(v: DomainStorage): IntVarImplementation = {
     //Cannot do pattern matching here as Implementation is not fully defined
-    if (v.isInstanceOf[AdaptableIntDomainStorage])
-      instantiateAdaptableIntDomainStorage(v.asInstanceOf[AdaptableIntDomainStorage])
-    else if (v.isInstanceOf[IntervalDomainStorage])
-      instantiateIntervalDomainStorage(v.asInstanceOf[IntervalDomainStorage])
-    else if (v.isInstanceOf[SetDomainStorage])
-      instantiateSetDomainStorage(v.asInstanceOf[SetDomainStorage])
-    else if (v.isInstanceOf[SingletonDomainStorage])
-      instantiateSingletonDomainStorage(v.asInstanceOf[SingletonDomainStorage])
-    else
-      sys.error("Unknown DomainStorage type in InstantiatedModel.instantiateDomainStorage")
+    v match {
+      case adaptable: AdaptableIntDomainStorage => instantiateAdaptableIntDomainStorage(adaptable)
+      case interval: IntervalDomainStorage => instantiateIntervalDomainStorage(interval)
+      case set: SetDomainStorage => instantiateSetDomainStorage(set)
+      case singleton: SingletonDomainStorage => instantiateSingletonDomainStorage(singleton)
+      case _ => sys.error("Unknown DomainStorage type in InstantiatedModel.instantiateDomainStorage")
+    }
   }
 
   protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): IntVarImplementation

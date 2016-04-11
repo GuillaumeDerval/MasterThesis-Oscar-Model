@@ -1,7 +1,8 @@
 package models.uninstantiated
 
-import misc.UnionFindStorage
+import misc.{ModelVarStorage, UnionFindStorage}
 import models.{Model, ModelDeclaration, NoOptimisation, OptimisationMethod}
+import vars.IntVar
 import vars.domainstorage.int.IntDomainStorage
 
 /**
@@ -10,6 +11,6 @@ import vars.domainstorage.int.IntDomainStorage
   */
 class BaseModel(val declaration: ModelDeclaration) extends UninstantiatedModel {
   override val parent: Option[Model] = None
-  val intRepresentatives: UnionFindStorage[IntDomainStorage] = UnionFindStorage[IntDomainStorage]()
+  val intRepresentatives: ModelVarStorage[IntVar, IntDomainStorage] = ModelVarStorage[IntVar, IntDomainStorage]()
   override var optimisationMethod: OptimisationMethod = new NoOptimisation
 }

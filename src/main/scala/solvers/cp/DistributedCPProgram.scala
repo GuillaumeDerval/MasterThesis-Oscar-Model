@@ -398,7 +398,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
       cpmodel.cpSolver.startSubjectTo() {
         cpmodel.cpObjective.tightenMode = TightenType.NoTighten
         for ((variable, value) <- sp) {
-          val v: CPIntVar = cpmodel.intRepresentatives.find(variable).realCPVar
+          val v: CPIntVar = cpmodel.intRepresentatives.get(variable).realCPVar
           cpmodel.cpSolver.post(v == value, CPPropagStrength.Strong)
         }
         cpmodel.cpObjective.tightenMode = TightenType.StrongTighten
