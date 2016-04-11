@@ -6,13 +6,7 @@ import vars.domainstorage.DomainStorage
 import scala.collection.immutable.SortedSet
 import scala.collection.mutable
 
-trait IntDomainStorage extends DomainStorage with IntVarImplem {
-  /**
-   * Returns a copy of the same type as the current one
-   * @return
-   */
-  override def copy(): IntDomainStorage
-}
+trait IntDomainStorage extends DomainStorage with IntVarImplem {}
 
 object IntDomainStorage {
   /**

@@ -61,12 +61,6 @@ class SetDomainStorage(val content: SortedSet[Int], repr_name: Option[String] = 
   override def hasValue(value: Int): Boolean = content.contains(value)
 
   /**
-   * Returns a copy of the same type as the current one
-   * @return
-   */
-  override def copy(): SetDomainStorage = new SetDomainStorage(content, getRepresentativeName)
-
-  /**
    * Return a representative name for this var(-like), if one was given
    */
   override def getRepresentativeName: Option[String] = repr_name

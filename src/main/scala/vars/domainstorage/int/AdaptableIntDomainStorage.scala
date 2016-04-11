@@ -57,11 +57,6 @@ class AdaptableIntDomainStorage(val content: IntDomainStorage) extends IntDomain
   override def hasValue(value: Int): Boolean = content.hasValue(value)
 
   /**
-   * Returns a copy of the same type as the current one
-   */
-  override def copy(): AdaptableIntDomainStorage = new AdaptableIntDomainStorage(content.copy())
-
-  /**
    * Return a representative name for this var(-like), if one was given
    */
   override def getRepresentativeName: Option[String] = content.getRepresentativeName

@@ -10,7 +10,7 @@ import vars.domainstorage.int.IntDomainStorage
 class ChildModel(p: UninstantiatedModel) extends UninstantiatedModel {
   override val parent: Option[Model] = Some(p)
   override val declaration: ModelDeclaration = p.declaration
-  override val intRepresentatives: UnionFindStorage[IntDomainStorage] = UnionFindStorage[IntDomainStorage, IntDomainStorage](p.intRepresentatives, _.copy())
+  override val intRepresentatives: UnionFindStorage[IntDomainStorage] = UnionFindStorage[IntDomainStorage, IntDomainStorage](p.intRepresentatives, a => a)
   override var optimisationMethod: OptimisationMethod = p.optimisationMethod
   override val constraints = p.constraints.clone()
 }

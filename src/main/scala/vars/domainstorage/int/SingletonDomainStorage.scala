@@ -51,12 +51,6 @@ class SingletonDomainStorage(single_value: Int, repr_name: Option[String] = None
   override def max: Int = single_value
 
   /**
-   * Returns a copy of the same type as the current one
-   * @return
-   */
-  override def copy(): SingletonDomainStorage = new SingletonDomainStorage(single_value, getRepresentativeName)
-
-  /**
    * Return a representative name for this var(-like), if one was given
    */
   override def getRepresentativeName: Option[String] = repr_name
