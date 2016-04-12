@@ -4,8 +4,10 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import constraints.Constraint
 import misc.SearchStatistics
-import models.ModelDeclaration
+import models.operators.ModelOperator
+import models.{Model, ModelDeclaration, UninstantiatedModel}
 import solvers.cp.branchings.Branching
+import vars.IntVar
 
 import scala.collection.mutable.ListBuffer
 import scala.spores.NullarySpore
@@ -113,5 +115,38 @@ class ModelProxy[CPModelType <: CPSolve[Retval], Retval](md: ModelDeclaration wi
   def onSolution(s: => Retval): Unit = md.onSolution(s)
   def onSolution(s: NullarySpore[Retval]): Unit = md.onSolution(s())
 
+  /**
+    * Post a new constraint
+    * @param constraint the constraint to post
+    */
   def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
+
+  /**
+    * Add a new constraint to the model
+    * @param constraint the constraint to add
+    */
+  def add(constraint: Constraint): Unit = modelDeclaration.add(constraint)
+
+  /**
+    * Apply a model operator
+    * @param operator operator to apply
+    */
+  def apply[OutputType <: Model](operator: ModelOperator[OutputType]): Unit = modelDeclaration(operator)
+
+  /**
+    * Minimize on variable v
+    * @param v variable to minimize
+    */
+  def minimize(v: IntVar) = modelDeclaration.minimize(v)
+
+  /**
+    * Maximize on variable v
+    * @param v variable to maximize
+    */
+  def maximize(v: IntVar) = modelDeclaration.maximize(v)
+
+  /**
+    * Remove the optimisation method
+    */
+  def removeOptimization() = modelDeclaration.removeOptimization()
 }

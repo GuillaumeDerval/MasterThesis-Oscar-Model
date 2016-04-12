@@ -4,10 +4,8 @@ import algebra._
 import constraints.ExpressionConstraint
 import models.UninstantiatedModel
 
-/**
- * Created by dervalguillaume on 22/10/15.
- */
-object SimplifySum {
+
+object SimplifySum extends ModelOperator[UninstantiatedModel] {
   def apply(model: UninstantiatedModel): UninstantiatedModel = {
     val newConstraints = model.constraints.map {
       case ExpressionConstraint(expr) => new ExpressionConstraint(SimplifySum(expr))

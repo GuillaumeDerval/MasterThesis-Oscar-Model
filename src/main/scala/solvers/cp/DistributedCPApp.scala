@@ -2,7 +2,7 @@ package solvers.cp
 
 import misc.SearchStatistics
 import misc.scallop.HostnameParser
-import models.{Model, UninstantiatedModel, ModelDeclaration}
+import models.{Model, ModelDeclaration, UninstantiatedModel}
 import org.rogach.scallop._
 
 /**

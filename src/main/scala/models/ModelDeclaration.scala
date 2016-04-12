@@ -2,6 +2,7 @@ package models
 
 import constraints.Constraint
 import misc.DynamicModelVariable
+import models.operators.ModelOperator
 import vars.IntVar
 import vars.domainstorage.int.IntDomainStorage
 
@@ -33,29 +34,61 @@ class ModelDeclaration extends Serializable {
   }
 
   /**
-   * Post a new constraint
-    *
-    * @param constraint
+    * Post a new constraint
+    * @param constraint the constraint to post
    */
   def post(constraint: Constraint): Unit = current_model.value match {
     case m: InstantiatedModel => postinstantiated(m, constraint)
     case m: UninstantiatedModel => postUninstantiated(m, constraint)
   }
 
+  /**
+    * Add a new constraint to the model
+    * @param constraint the constraint to add
+    */
+  def add(constraint: Constraint): Unit = post(constraint)
+
+  /**
+    * Post for Instantiated models
+    * @param model the model on which to post the constraint
+    * @param constraint the constraint to post
+    */
   private def postinstantiated(model: InstantiatedModel, constraint: Constraint): Unit = {
     model.post(constraint)
   }
+
+  /**
+    * Post for Uninstantiated models
+    * @param model the model on which to post the constraint
+    * @param constraint the constraint to post
+    */
   private def postUninstantiated(model: UninstantiatedModel, constraint: Constraint): Unit = {
     current_model.value = model.post(constraint)
   }
 
+  /**
+    * Minimize on variable v
+    * @param v variable to minimize
+    */
   def minimize(v: IntVar) = current_model.value match {
     case m: UninstantiatedModel => current_model.value = m.minimize(v)
     case _ => throw new Exception("Cannot modify the optimisation method of an instantiated model")
   }
 
+  /**
+    * Maximize on variable v
+    * @param v variable to maximize
+    */
   def maximize(v: IntVar) = current_model.value match {
     case m: UninstantiatedModel => current_model.value = m.maximize(v)
+    case _ => throw new Exception("Cannot modify the optimisation method of an instantiated model")
+  }
+
+  /**
+    * Remove the optimisation method
+    */
+  def removeOptimization() = current_model.value match {
+    case m: UninstantiatedModel => current_model.value = m.removeOptimisation()
     case _ => throw new Exception("Cannot modify the optimisation method of an instantiated model")
   }
 
@@ -66,5 +99,14 @@ class ModelDeclaration extends Serializable {
       r._1
     }
     case _ => throw new Exception("Cannot add a new variable in an instantiated model")
+  }
+
+  /**
+    * Apply a model operator
+    * @param operator operator to apply
+    */
+  def apply[OutputType <: Model](operator: ModelOperator[OutputType]): Unit = current_model.value match {
+    case m: UninstantiatedModel => current_model.value = operator(m)
+    case _ => throw new Exception("Cannot apply an operator on an instantiated model")
   }
 }

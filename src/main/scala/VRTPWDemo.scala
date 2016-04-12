@@ -1,5 +1,6 @@
 import algebra.Sum
 import constraints._
+import models.operators.SimplifySum
 import solvers.cp
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
@@ -49,7 +50,7 @@ object GolombRuler extends DistributedCPApp[String] with App {
   if (n > 2)
     post(d(0) < d(n_d-1))
 
-  this.modelDeclaration.minimize(m(n - 1))
+  minimize(m(n - 1))
 
   setSearch {
     Branching.binaryStatic(m)
@@ -64,6 +65,8 @@ object GolombRuler extends DistributedCPApp[String] with App {
       v
     }
   })
+
+  apply(SimplifySum)
 
   setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
   val (stats, solutions) = solve()
