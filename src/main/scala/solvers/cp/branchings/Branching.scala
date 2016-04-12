@@ -1,14 +1,14 @@
 package solvers.cp.branchings
 
-import models.instantiated.InstantiatedCPModel
+import models.CPModel
 import vars.IntVar
 
 /**
   * Created by dervalguillaume on 4/11/15.
   */
 trait Branching extends Serializable {
-  def forModel(model: InstantiatedCPModel): oscar.algo.search.Branching
-  def apply(model: InstantiatedCPModel) = forModel(model)
+  def forModel(model: CPModel): oscar.algo.search.Branching
+  def apply(model: CPModel) = forModel(model)
 }
 
 object Branching{
@@ -70,6 +70,7 @@ object Branching{
   /**
     * Binary Search on the decision variables vars with fixed static ordering.
     * The next variable to assign is the first unbound variable in vars.
+    *
     * @param vars: the array of variables to assign during the search
     * @param valHeuris: gives the value v to try on left branch for the chosen variable, this value is removed on the right branch
     */

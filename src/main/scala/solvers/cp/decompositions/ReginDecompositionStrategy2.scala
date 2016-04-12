@@ -2,8 +2,8 @@ package solvers.cp.decompositions
 
 import constraints.Table
 import misc.{CartesianProduct, SubsetProduct}
+import models.UninstantiatedModel
 import models.operators.CPInstantiate
-import models.uninstantiated.UninstantiatedModel
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
 import vars.IntVar
@@ -39,7 +39,7 @@ class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) =
     val cpmodel = CPInstantiate(model)
     val list = new mutable.MutableList[(Map[IntVar, Int],SubproblemData)]
 
-    cpmodel.declaration.applyFuncOnModel(cpmodel) {
+    cpmodel.declaration.apply(cpmodel) {
       cpmodel.cpSolver.onSolution {
         val m = new mutable.HashMap[IntVar, Int]
         for(v <- svars)

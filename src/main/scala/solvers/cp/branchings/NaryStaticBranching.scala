@@ -1,6 +1,6 @@
 package solvers.cp.branchings
 
-import models.instantiated.InstantiatedCPModel
+import models.CPModel
 import oscar.algo.search
 import oscar.cp._
 import oscar.cp.searches.Decision
@@ -8,7 +8,7 @@ import vars.IntVar
 
 
 class NaryStaticBranching(array: Array[IntVar]) extends Branching {
-  override def forModel(model: InstantiatedCPModel): search.Branching = {
+  override def forModel(model: CPModel): search.Branching = {
     new NaryStaticBranchingOscar(array.map(a => model.getRepresentative(a).realCPVar))
   }
 }

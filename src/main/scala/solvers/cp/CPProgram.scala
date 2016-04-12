@@ -1,9 +1,7 @@
 package solvers.cp
 
 import models._
-import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
-import models.uninstantiated.UninstantiatedModel
 
 /**
  * A program that uses a CP solver, with a single search
@@ -22,8 +20,8 @@ class CPProgram[RetVal](md: ModelDeclaration with CPSolve[RetVal] = new ModelDec
   def solve(model: Model): Unit = {
     model match {
       case m: UninstantiatedModel => solve(m)
-      case m: InstantiatedCPModel => solve(m)
-      case _ => sys.error("Trying to solve an instanciated model, but not CP compatible, is impossible")
+      case m: CPModel => solve(m)
+      case _ => sys.error("Trying to solve an instantiated model, but not CP compatible, is impossible")
     }
   }
 
@@ -34,9 +32,9 @@ class CPProgram[RetVal](md: ModelDeclaration with CPSolve[RetVal] = new ModelDec
   /**
    * Solve the model, by instantiating it and starting the resolution
    */
-  def solve(model: InstantiatedCPModel): Unit = {
+  def solve(model: CPModel): Unit = {
     //Start the solver
-    modelDeclaration.applyFuncOnModel(model) {
+    modelDeclaration.apply(model) {
       model.cpSolver.onSolution {onSolution()}
       model.cpSolver.search(getSearch(model))
       println(model.cpSolver.start())

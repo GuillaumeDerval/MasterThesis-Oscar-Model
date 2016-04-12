@@ -7,8 +7,6 @@ import misc.ComputeTimeTaken.computeTimeTaken
 import misc.SearchStatistics
 import misc.TimeHelper._
 import models._
-import models.instantiated.InstantiatedCPModel
-import models.uninstantiated.UninstantiatedModel
 import oscar.cp.TightenType
 import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy, DecompositionStrategyToClosureConverter}
 import vars.IntVar
@@ -39,7 +37,7 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
 
     println("Subproblems: "+subproblems.length.toString)
 
-    val queue = new LinkedBlockingQueue[((InstantiatedCPModel) => Unit, Int)]()
+    val queue = new LinkedBlockingQueue[((CPModel) => Unit, Int)]()
     val outputQueue = new LinkedBlockingQueue[SolvingMessage]()
 
     for (s <- subproblems.zipWithIndex)
@@ -69,12 +67,12 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
   }
 
   class Subsolver(uninstantiatedModel: UninstantiatedModel,
-                  subproblemQueue: util.Queue[((InstantiatedCPModel) => Unit, Int)],
+                  subproblemQueue: util.Queue[((CPModel) => Unit, Int)],
                   outputQueue: util.Queue[SolvingMessage],
                   boundaryManager: Option[SynchronizedIntBoundaryManager]) extends Runnable {
     override def run(): Unit = {
-      val cpmodel = new InstantiatedCPModel(uninstantiatedModel)
-      modelDeclaration.applyFuncOnModel(cpmodel) {
+      val cpmodel = new CPModel(uninstantiatedModel)
+      modelDeclaration.apply(cpmodel) {
         cpmodel.cpSolver.silent = true
 
         val objv: IntVar = cpmodel.optimisationMethod match {

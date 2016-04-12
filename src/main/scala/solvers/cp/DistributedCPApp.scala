@@ -2,8 +2,7 @@ package solvers.cp
 
 import misc.SearchStatistics
 import misc.scallop.HostnameParser
-import models.uninstantiated.UninstantiatedModel
-import models.{Model, ModelDeclaration}
+import models.{Model, UninstantiatedModel, ModelDeclaration}
 import org.rogach.scallop._
 
 /**
@@ -35,6 +34,7 @@ class DistributedCPAppConfig extends Subcommand("master") {
 /**
   * Minimal configuration for a DistributedCPApp. This contains the client and master configuration, but most users will
   * only want to override config for the master; see DistributedCPAppConfig.
+  *
   * @param arguments args from App
   */
 class DistributedCPAppCompleteConfig(arguments: Seq[String]) extends ScallopConf(arguments) {
@@ -51,6 +51,7 @@ class DistributedCPAppCompleteConfig(arguments: Seq[String]) extends ScallopConf
 
 /**
   * An app for DistributedCPProgram that provides a simple CLI for any model
+  *
   * @param md
   * @tparam RetVal
   */

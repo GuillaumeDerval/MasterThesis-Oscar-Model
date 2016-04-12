@@ -13,8 +13,6 @@ import misc.ComputeTimeTaken._
 import misc.SearchStatistics
 import misc.TimeHelper._
 import models._
-import models.instantiated.InstantiatedCPModel
-import models.uninstantiated.UninstantiatedModel
 import oscar.cp.core.CPPropagStrength
 import oscar.cp.{CPIntVar, TightenType}
 import solvers.cp.decompositions.DecompositionStrategy
@@ -85,7 +83,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     */
   def solveLocally(model: UninstantiatedModel, threadCount: Int, sppw: Int): (SearchStatistics, List[RetVal]) = {
     solve(model, sppw*threadCount,
-      ConfigFactory.load(),
+      AkkaConfigCreator.local(),
       (system, masterActor) => List.fill(threadCount)(system.actorOf(SolverActor.props[RetVal](md, masterActor)))
     )
   }
@@ -126,7 +124,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     */
   def solveDistributed(model: UninstantiatedModel, remoteHosts: List[(String, Int)], localhost: (String, Int), sppw: Int): (SearchStatistics, List[RetVal]) = {
     val (hostname, port) = localhost
-    val config = AkkaConfigCreator(hostname, port)
+    val config = AkkaConfigCreator.remote(hostname, port)
 
     solve(model, sppw*remoteHosts.length, config,
       (system, masterActor) => {
@@ -149,7 +147,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @return
     */
   def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => List[ActorRef]): (SearchStatistics, List[RetVal]) = {
-    modelDeclaration.applyFuncOnModel(model) {
+    modelDeclaration.apply(model) {
       val subproblems: List[(Map[IntVar, Int], SubproblemData)] = computeTimeTaken("decomposition", "solving") {
         getDecompositionStrategy.decompose(model, subproblemCount)
       }
@@ -204,12 +202,12 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 }
 
 class SimpleRemoteSolverSystem(hostname: String, port: Int) {
-  val system = ActorSystem("solving", AkkaConfigCreator(hostname, port))
+  val system = ActorSystem("solving", AkkaConfigCreator.remote(hostname, port))
   Await.result(system.whenTerminated, Duration.Inf)
 }
 
 private object AkkaConfigCreator {
-  def apply(hostname: String, port: Int): Config = {
+  def remote(hostname: String, port: Int): Config = {
     ConfigFactory.parseString(s"""
        akka {
          actor {
@@ -234,12 +232,17 @@ private object AkkaConfigCreator {
        }
      """)
   }
+
+  def local(): Config = {
+    ConfigFactory.load()
+    //ConfigFactory.parseString(s"""akka { loglevel = DEBUG }""")
+  }
 }
 
 /**
   * An actor that manages a collection of SolverActor
   *
-  * @param modelDeclaration that contains an UninstanciatedModel as current model (the one to be solved)
+  * @param modelDeclaration that contains an UninstantiatedModel as current model (the one to be solved)
   * @param subproblemQueue
   * @param outputQueue
   * @tparam RetVal
@@ -315,7 +318,7 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
 /**
   * A solver actor, that solves one subproblem at once
   *
-  * @param modelDeclaration that contains an UninstanciatedModel as current model (this is the one to be solved)
+  * @param modelDeclaration that contains an UninstantiatedModel as current model (this is the one to be solved)
   * @tparam RetVal
   */
 class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal],
@@ -326,7 +329,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
 
   val uninstantiatedModel = modelDeclaration.getCurrentModel.asInstanceOf[UninstantiatedModel]
 
-  val cpmodel = new InstantiatedCPModel(uninstantiatedModel)
+  val cpmodel = new CPModel(uninstantiatedModel)
   cpmodel.cpSolver.silent = true
 
   @volatile private var boundary = 0
@@ -391,7 +394,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     */
   def solve_subproblem(spid: Int, sp: Map[Int, Int]): Unit = {
     val t0 = getThreadCpuTime
-    val info = modelDeclaration.applyFuncOnModel(cpmodel) {
+    val info = modelDeclaration.apply(cpmodel) {
       cpmodel.cpSolver.startSubjectTo() {
         cpmodel.cpObjective.tightenMode = TightenType.NoTighten
         for ((variable, value) <- sp) {

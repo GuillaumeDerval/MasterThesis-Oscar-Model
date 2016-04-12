@@ -1,9 +1,7 @@
-package models.instantiated
+package models
 
 import algebra._
 import constraints._
-import models.uninstantiated.UninstantiatedModel
-import models.{Maximisation, Minimisation}
 import oscar.cp
 import oscar.cp.constraints.{CPObjective, CPObjectiveUnit, CPObjectiveUnitMaximize, CPObjectiveUnitMinimize}
 import oscar.cp.core.CPPropagStrength
@@ -13,29 +11,22 @@ import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage,
 import vars.{BoolVar, IntVar}
 
 /**
- * An instantiated model, containing CPVars as implementations
-  *
-  * @param p: the parent Model
- */
-class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
+  * Created by dervalguillaume on 12/04/16.
+  */
+class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
   implicit lazy val cpSolver = new oscar.cp.CPSolver()
   override type IntVarImplementation = CPIntVar
-  var cpObjective: CPObjectiveUnit = null
 
-  optimisationMethodUpdated() //initialise the bound
-
-  override protected def optimisationMethodUpdated(): Unit = {
-    val v: CPObjectiveUnit= this.optimisationMethod match {
-      case m: Minimisation =>
-        new CPObjectiveUnitMinimize(this.getRepresentative(m.objective).realCPVar)
-      case m: Maximisation =>
-        new CPObjectiveUnitMaximize(this.getRepresentative(m.objective).realCPVar)
-      case _ => null
-    }
-    if(v != null)
-      cpSolver.optimize(new CPObjective(cpSolver, v))
-    cpObjective = v
+  val cpObjective: CPObjectiveUnit= this.optimisationMethod match {
+    case m: Minimisation =>
+      new CPObjectiveUnitMinimize(this.getRepresentative(m.objective).realCPVar)
+    case m: Maximisation =>
+      new CPObjectiveUnitMaximize(this.getRepresentative(m.objective).realCPVar)
+    case _ => null
   }
+
+  if(cpObjective != null)
+    cpSolver.optimize(new CPObjective(cpSolver, cpObjective))
 
   override protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): CPIntVar = {
     if(adaptable.min >= 0 && adaptable.max <= 1)
@@ -242,9 +233,9 @@ class InstantiatedCPModel(p: UninstantiatedModel) extends InstantiatedModel(p) {
     * @param allVar this function will be called if a and b are not constant
     */
   def getCPIntVarForPossibleConstant(a: IntExpression, b: IntExpression,
-                                        leftCst: (Int, oscar.cp.CPIntVar) => oscar.cp.CPIntVar,
-                                        rightCst: (oscar.cp.CPIntVar, Int) => oscar.cp.CPIntVar,
-                                        allVar: (oscar.cp.CPIntVar, oscar.cp.CPIntVar) => oscar.cp.CPIntVar): oscar.cp.CPIntVar = {
+                                     leftCst: (Int, oscar.cp.CPIntVar) => oscar.cp.CPIntVar,
+                                     rightCst: (oscar.cp.CPIntVar, Int) => oscar.cp.CPIntVar,
+                                     allVar: (oscar.cp.CPIntVar, oscar.cp.CPIntVar) => oscar.cp.CPIntVar): oscar.cp.CPIntVar = {
     (a,b) match {
       case (Constant(value), variable:IntExpression) => leftCst(value, postIntExpressionAndGetVar(variable))
       case (variable: IntExpression, Constant(value)) => rightCst(postIntExpressionAndGetVar(variable), value)

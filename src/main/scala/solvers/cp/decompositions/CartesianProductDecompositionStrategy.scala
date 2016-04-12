@@ -1,10 +1,8 @@
 package solvers.cp.decompositions
 
 import misc.CartesianProduct
-import models.NoOptimisation
-import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
-import models.uninstantiated.{ChildModel, UninstantiatedModel}
+import models.{CPModel, UninstantiatedModel}
 import oscar.cp.core.NoSolutionException
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
@@ -21,13 +19,13 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
   var currentDiscrepancy = -1
   var currentPath: Array[Int] = null
 
-  def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
+  def decompose(model: UninstantiatedModel, count: Int): List[((CPModel) => Unit,SubproblemData)] = {
     if(count == 0) //no decomposition
-      return List[((InstantiatedCPModel) => Unit,SubproblemData)]()
+      return List[((CPModel) => Unit,SubproblemData)]()
 
     val initialLog = CartesianProduct.computeLog(allVars)
 
-    var decomp: List[((InstantiatedCPModel) => Unit,SubproblemData)] = List[((InstantiatedCPModel) => Unit,SubproblemData)]()
+    var decomp: List[((CPModel) => Unit,SubproblemData)] = List[((CPModel) => Unit,SubproblemData)]()
     var currentThreshold = initialLog - Math.log(count) //divide real value by count
     while(decomp.size < count) {
       println("Try with "+currentThreshold.toString)
@@ -38,7 +36,7 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
     decomp
   }
 
-  def customSearch(a: InstantiatedCPModel, threshold: Double): Seq[oscar.cp.Alternative] = {
+  def customSearch(a: CPModel, threshold: Double): Seq[oscar.cp.Alternative] = {
     val base : Seq[oscar.cp.Alternative] = search.forModel(a).alternatives()
     val trueDepth = currentDepth+1
     val trueDiscrepancy = currentDiscrepancy
@@ -61,14 +59,12 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
     }
   }
 
-  def tryDecomposition(model: UninstantiatedModel, threshold: Double): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
+  def tryDecomposition(model: UninstantiatedModel, threshold: Double): List[((CPModel) => Unit,SubproblemData)] = {
     currentDepth = -1
     currentPath = Array.tabulate(32)(_ => -1) //32 should be enough for decomposition
     currentDiscrepancy = 0
 
-    val vmodel = new ChildModel(model)
-    //Disable optimisation to avoid unbounded variables
-    vmodel.optimisationMethod = new NoOptimisation
+    val vmodel = model.removeOptimisation()
 
 
     val cpmodel = CPInstantiate(vmodel)
@@ -78,7 +74,7 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
 
     implicit val declaration = cpmodel.declaration
 
-    declaration.applyFuncOnModel(cpmodel) {
+    declaration.apply(cpmodel) {
       cpmodel.cpSolver.search(customSearch(cpmodel, threshold))
       cpmodel.cpSolver.onSolution {
         path_list += ((currentPath.clone().slice(0, currentDepth+1), new SubproblemData(CartesianProduct.computeLog(allVars), model.optimisationMethod, currentDiscrepancy)))
@@ -87,7 +83,7 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
     }
 
     path_list.toList.map(path_with_data => {
-      ((newModel: InstantiatedCPModel) => {
+      ((newModel: CPModel) => {
         val newSearch = search.forModel(newModel)
         var currentAlternatives = newSearch.alternatives()
         for(i <- path_with_data._1) {
@@ -110,15 +106,14 @@ class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) ex
       return List[(Map[IntVar, Int],SubproblemData)]()
 
     //Initialise a CP Model
-    val vmodel = new ChildModel(model)
-    vmodel.optimisationMethod = new NoOptimisation
+    val vmodel = model.removeOptimisation()
     val cpmodel = CPInstantiate(vmodel)
 
     //Init the queue that will order the subproblems by cartesian product
     val q = mutable.PriorityQueue[SubproblemInfo]()
     q += new SubproblemInfo(List(), CartesianProduct.computeLog(allVars), List())
 
-    cpmodel.declaration.applyFuncOnModel(cpmodel) {
+    cpmodel.declaration.apply(cpmodel) {
       while(q.size < count) {
         //Dequeue the largest subproblem, and compute its domain
         val sp = q.dequeue()

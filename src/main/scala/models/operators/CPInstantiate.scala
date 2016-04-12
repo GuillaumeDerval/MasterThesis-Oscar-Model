@@ -1,13 +1,12 @@
 package models.operators
 
-import models.instantiated.InstantiatedCPModel
-import models.uninstantiated.UninstantiatedModel
+import models.{CPModel, UninstantiatedModel}
 
 /**
  * Instantiate a model for a solve using CP
  */
 object CPInstantiate extends ModelOperator {
-  def apply(model: UninstantiatedModel): InstantiatedCPModel = {
-    new InstantiatedCPModel(model)
+  def apply(model: UninstantiatedModel): CPModel = {
+    new CPModel(model)
   }
 }

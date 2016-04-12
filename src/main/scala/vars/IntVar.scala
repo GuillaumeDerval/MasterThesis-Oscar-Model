@@ -3,7 +3,6 @@ package vars
 import algebra.IntExpression
 import misc.VariableNotBoundException
 import models.ModelDeclaration
-import models.uninstantiated.UninstantiatedModel
 import vars.domainstorage.int.IntDomainStorage
 
 import scala.collection.immutable.SortedSet
@@ -14,7 +13,7 @@ import scala.util.Random
  * @param model_decl: the ModelDeclaration associated with this Var
  */
 class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Var(model_decl, storage) with IntVarLike with IntExpression {
-  override val varid = model_decl.getCurrentModel.asInstanceOf[UninstantiatedModel].addNewRepresentative(storage)
+  override val varid = model_decl.addNewRepresentative(storage)
 
   protected def getRepresentative: IntVarImplem = model_decl.getCurrentModel.getRepresentative(this).asInstanceOf[IntVarImplem]
   override def isBound: Boolean = getRepresentative.isBound

@@ -74,7 +74,7 @@ class DemoNQueens extends ModelDeclaration with LocalDecomposedCPSolve[String] {
 object DemoDistribute extends LocalParallelCPProgram(new DemoNQueens()) with App {
   this.subproblemsCount = 1000 //20
   //this.subproblemsCount = 1
-  this.threadsToLaunch = 3
+  this.threadsToLaunch = 1
   val t0 = System.nanoTime()
   solve()
   val t1 = System.nanoTime()

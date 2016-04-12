@@ -1,10 +1,8 @@
 package solvers.cp.decompositions
 
 import misc.CartesianProduct
-import models.NoOptimisation
-import models.instantiated.InstantiatedCPModel
 import models.operators.CPInstantiate
-import models.uninstantiated.{ChildModel, UninstantiatedModel}
+import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
 import vars.IntVar
@@ -21,13 +19,13 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
   var currentAmount = -1
   var currentPath: Array[Int] = null
 
-  def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
+  def decompose(model: UninstantiatedModel, count: Int): List[((CPModel) => Unit,SubproblemData)] = {
     if(count == 0) //no decomposition
-      return List[((InstantiatedCPModel) => Unit,SubproblemData)]()
+      return List[((CPModel) => Unit,SubproblemData)]()
     tryDecomposition(model, count)
   }
 
-  def customSearch(a: InstantiatedCPModel): Seq[oscar.cp.Alternative] = {
+  def customSearch(a: CPModel): Seq[oscar.cp.Alternative] = {
     val base : Seq[oscar.cp.Alternative] = search.forModel(a).alternatives()
 
     val trueDepth = currentDepth+1
@@ -60,16 +58,13 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
     }
   }
 
-  def tryDecomposition(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
+  def tryDecomposition(model: UninstantiatedModel, count: Int): List[((CPModel) => Unit,SubproblemData)] = {
     currentDepth = -1
     currentPath = Array.tabulate(32)(_ => -1) //32 should be enough for decomposition
     currentDiscrepancy = 0
     currentAmount = count
 
-    val vmodel = new ChildModel(model)
-    //Disable optimisation to avoid unbounded variables
-    vmodel.optimisationMethod = new NoOptimisation
-
+    val vmodel = model.removeOptimisation()
 
     val cpmodel = CPInstantiate(vmodel)
 
@@ -78,7 +73,7 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
 
     implicit val declaration = cpmodel.declaration
 
-    declaration.applyFuncOnModel(cpmodel) {
+    declaration.apply(cpmodel) {
       cpmodel.cpSolver.search(customSearch(cpmodel))
       cpmodel.cpSolver.onSolution {
         path_list += ((currentPath.clone().slice(0, currentDepth), new SubproblemData(CartesianProduct.computeLog(allVars), model.optimisationMethod, currentDiscrepancy)))
@@ -87,7 +82,7 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
     }
 
     path_list.toList.map(path_with_data => {
-      ((newModel: InstantiatedCPModel) => {
+      ((newModel: CPModel) => {
         val newSearch = search.forModel(newModel)
         var currentAlternatives = newSearch.alternatives()
         for(i <- path_with_data._1) {

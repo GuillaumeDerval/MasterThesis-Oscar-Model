@@ -2,22 +2,19 @@ package models.operators
 
 import algebra._
 import constraints.ExpressionConstraint
-import models.uninstantiated.{ChildModel, UninstantiatedModel}
+import models.UninstantiatedModel
 
 /**
  * Created by dervalguillaume on 22/10/15.
  */
 object SimplifySum {
   def apply(model: UninstantiatedModel): UninstantiatedModel = {
-    val newmodel= new ChildModel(model)
+    val newConstraints = model.constraints.map {
+      case ExpressionConstraint(expr) => new ExpressionConstraint(SimplifySum(expr))
+      case constraint@default => constraint
+    }
 
-    newmodel.constraints.map((constraint) => {
-      constraint match {
-        case ExpressionConstraint(expr) => new ExpressionConstraint(SimplifySum(expr).asInstanceOf[BoolExpression])
-        case default => constraint
-      }
-    })
-    newmodel
+    model.copy(constraints = newConstraints)
   }
 
   def apply(expr: BoolExpression): BoolExpression = {

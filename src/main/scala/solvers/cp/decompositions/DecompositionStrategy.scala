@@ -2,8 +2,7 @@ package solvers.cp.decompositions
 
 import java.util.concurrent.LinkedBlockingQueue
 
-import models.instantiated.InstantiatedCPModel
-import models.uninstantiated.UninstantiatedModel
+import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
 import vars.IntVar
 
@@ -14,6 +13,7 @@ import vars.IntVar
 trait DecompositionStrategy extends Serializable {
   /**
     * Decompose the problem
+    *
     * @param model the model to decompose
     * @param count the (minimum) number of subproblems wanted
     * @return A list of assignation to variable that makes the subproblem, along with the associated SubproblemData
@@ -29,24 +29,26 @@ trait DecompositionStrategy extends Serializable {
 trait ClosureDecompositionStrategy {
   /**
     * Decompose the problem
+    *
     * @param model the model to decompose
     * @param count the (minimum) number of subproblems wanted
     * @return A list of closure (to be applied on a child model) that gives
     *         the wanted subproblem, and the SubproblemData object associated
     */
-  def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)]
+  def decompose(model: UninstantiatedModel, count: Int): List[((CPModel) => Unit,SubproblemData)]
 }
 
 
 /**
   * Convert a DecompositionStrategy to a ClosureDecompositionStrategy
+  *
   * @param sub the DecompositionStrategy to transform
   */
 class DecompositionStrategyToClosureConverter(sub: DecompositionStrategy) extends ClosureDecompositionStrategy{
-  def decompose(model: UninstantiatedModel, count: Int): List[((InstantiatedCPModel) => Unit,SubproblemData)] = {
+  def decompose(model: UninstantiatedModel, count: Int): List[((CPModel) => Unit,SubproblemData)] = {
     val l = sub.decompose(model, count)
     l.map((m) => {
-      ((instantiated_model: InstantiatedCPModel) => {
+      ((instantiated_model: CPModel) => {
         for ((variable, value) <- m._1) {
           instantiated_model.post(variable == value)
         }
@@ -62,7 +64,7 @@ object DecompositionStrategyToClosureConverter {
   implicit def convert(sub: DecompositionStrategy): ClosureDecompositionStrategy = new DecompositionStrategyToClosureConverter(sub)
 }
 
-class SubproblemQueue(orignal_list: List[((InstantiatedCPModel) => Unit, SubproblemData)], maximisation: Boolean) {
+class SubproblemQueue(orignal_list: List[((CPModel) => Unit, SubproblemData)], maximisation: Boolean) {
   val subproblems = orignal_list.toArray
   val todo = new LinkedBlockingQueue[Int]()
   for(sp <- orignal_list.indices)
@@ -72,7 +74,7 @@ class SubproblemQueue(orignal_list: List[((InstantiatedCPModel) => Unit, Subprob
   val done = Array.tabulate(subproblems.length)(i => false)
   var notDoneNb = subproblems.length
 
-  def poll(): (Int, (InstantiatedCPModel) => Unit) = {
+  def poll(): (Int, (CPModel) => Unit) = {
     val next = todo.poll()
     if(pruned(next))
       poll()

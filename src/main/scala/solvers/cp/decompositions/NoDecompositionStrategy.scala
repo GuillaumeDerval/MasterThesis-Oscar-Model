@@ -1,6 +1,6 @@
 package solvers.cp.decompositions
 
-import models.uninstantiated.UninstantiatedModel
+import models.UninstantiatedModel
 import solvers.cp.SubproblemData
 import vars.IntVar
 

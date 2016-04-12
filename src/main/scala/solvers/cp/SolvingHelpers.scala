@@ -103,7 +103,6 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
 class ModelProxy[CPModelType <: CPSolve[Retval], Retval](md: ModelDeclaration with CPModelType) {
   implicit val modelDeclaration: ModelDeclaration with CPModelType = md
 
-  def getDeclaredModel = modelDeclaration.getDeclaredModel
   def getCurrentModel = modelDeclaration.getCurrentModel
 
   def getSearch = md.getSearch

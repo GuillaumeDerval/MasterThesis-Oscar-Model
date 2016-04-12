@@ -2,9 +2,8 @@ package solvers.cp.decompositions
 
 import constraints.Table
 import misc.CartesianProduct
-import models.NoOptimisation
+import models.UninstantiatedModel
 import models.operators.CPInstantiate
-import models.uninstantiated.{ChildModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
 import vars.IntVar
@@ -33,16 +32,13 @@ class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) =>
   }
 
   def tryDecomposition(vmodel: UninstantiatedModel, svars: Array[IntVar], oldvalues: List[(Map[IntVar, Int],SubproblemData)]): List[(Map[IntVar, Int],SubproblemData)] = {
-    val vmodel2 = new ChildModel(vmodel)
-    //Disable optimisation to avoid unbounded variables
-    //val old_method = vmodel.optimisationMethod
-    vmodel2.optimisationMethod = new NoOptimisation
+    val vmodel2 = vmodel.removeOptimisation()
     val cpmodel = CPInstantiate(vmodel2)
     //vmodel.optimisationMethod = old_method
 
     val list = new mutable.MutableList[(Map[IntVar, Int],SubproblemData)]
 
-    cpmodel.declaration.applyFuncOnModel(cpmodel) {
+    cpmodel.declaration.apply(cpmodel) {
       var currentDiscrepancy = -1
       cpmodel.cpSolver.onSolution {
         val m = new mutable.HashMap[IntVar, Int]
