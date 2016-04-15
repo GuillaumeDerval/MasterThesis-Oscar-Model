@@ -2,9 +2,9 @@ package solvers.cp.decompositions
 
 import java.util.concurrent.LinkedBlockingQueue
 
+import constraints.Constraint
 import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
-import vars.IntVar
 
 /**
   * Decomposition strategy that uses assignations as decompositions
@@ -18,7 +18,7 @@ trait DecompositionStrategy extends Serializable {
     * @param count the (minimum) number of subproblems wanted
     * @return A list of assignation to variable that makes the subproblem, along with the associated SubproblemData
     */
-  def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)]
+  def decompose(model: UninstantiatedModel, count: Int): List[(List[Constraint],SubproblemData)]
 }
 
 
@@ -49,9 +49,8 @@ class DecompositionStrategyToClosureConverter(sub: DecompositionStrategy) extend
     val l = sub.decompose(model, count)
     l.map((m) => {
       ((instantiated_model: CPModel) => {
-        for ((variable, value) <- m._1) {
-          instantiated_model.post(variable == value)
-        }
+        for (constraint <- m._1)
+          instantiated_model.post(constraint)
       }, m._2)
     })
   }

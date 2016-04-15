@@ -1,6 +1,6 @@
 package solvers.cp.decompositions
 
-import constraints.Table
+import constraints.{Constraint, Table}
 import misc.{CartesianProduct, SubsetProduct}
 import models.UninstantiatedModel
 import models.operators.CPInstantiate
@@ -14,7 +14,7 @@ class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) =
 {
   val varsSize = vars.map(i => i.values().size)
 
-  override def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)] = {
+  override def decompose(model: UninstantiatedModel, count: Int): List[(List[Constraint],SubproblemData)] = {
     var nbSolutions = 1
     var retval: List[(Map[IntVar, Int],SubproblemData)] = null
     val currentlySelected = new mutable.HashSet[Int]
@@ -28,7 +28,9 @@ class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) =
 
       retval = tryDecomposition(model, currentlySelected.toArray.map(i => vars(i)), retval)
       if(retval.size >= count || currentlyUnselected.isEmpty)
-        return retval
+        return retval.map((tuple) => {
+          (tuple._1.map(intassign => (intassign._1 == intassign._2).toConstraint).toList, tuple._2)
+        })
       nbSolutions = retval.size
     }
     assert(false, "Decompose should always return a value")

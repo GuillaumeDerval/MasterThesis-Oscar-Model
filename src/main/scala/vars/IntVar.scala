@@ -1,6 +1,8 @@
 package vars
 
 import algebra.IntExpression
+import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import misc.VariableNotBoundException
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage
@@ -12,9 +14,7 @@ import scala.util.Random
  * Represents a variable with Integer domain
  * @param model_decl: the ModelDeclaration associated with this Var
  */
-class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Var(model_decl, storage) with IntVarLike with IntExpression {
-  override val varid = model_decl.addNewRepresentative(storage)
-
+class IntVar(model_decl: ModelDeclaration, id: Int) extends Var(model_decl, id) with IntVarLike with IntExpression {
   protected def getRepresentative: IntVarImplem = model_decl.getCurrentModel.getRepresentative(this).asInstanceOf[IntVarImplem]
   override def isBound: Boolean = getRepresentative.isBound
   override def randomValue(implicit rand: Random): Int = getRepresentative.randomValue(rand)
@@ -36,34 +36,34 @@ class IntVar(model_decl: ModelDeclaration, storage: IntDomainStorage) extends Va
 
 object IntVar {
   def apply(minValue: Int, maxValue: Int)(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(minValue, maxValue))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(minValue, maxValue)))
   }
 
   def apply(content: Set[Int])(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(content))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(content)))
   }
 
   def apply(content: SortedSet[Int])(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(content))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(content)))
   }
 
   def apply(value: Int)(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(value))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(value)))
   }
 
   def apply(minValue: Int, maxValue: Int, name: Option[String])(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(minValue, maxValue, name))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(minValue, maxValue, name)))
   }
 
   def apply(content: Set[Int], name: Option[String])(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(content, name))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(content, name)))
   }
 
   def apply(content: SortedSet[Int], name: Option[String])(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(content, name))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(content, name)))
   }
 
   def apply(value: Int, name: Option[String])(implicit model_decl: ModelDeclaration) = {
-    new IntVar(model_decl, IntDomainStorage(value, name))
+    new IntVar(model_decl, model_decl.addNewRepresentative(IntDomainStorage(value, name)))
   }
 }

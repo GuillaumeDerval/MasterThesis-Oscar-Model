@@ -27,7 +27,7 @@ object ModelVarStorage {
   * Stores variable domains (and allow to replace/union domains)
   * Immutable
   */
-class ModelVarStorage[VarType <: Var, StoredObject](private val array: IndexedSeq[StoredObject]) {
+class ModelVarStorage[VarType <: Var, StoredObject](private val array: IndexedSeq[StoredObject]) extends Serializable {
   /**
     * Get the domain of `v`
     * @param v the variable of which we want to find the domain

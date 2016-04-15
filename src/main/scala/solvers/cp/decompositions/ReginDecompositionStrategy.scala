@@ -1,6 +1,6 @@
 package solvers.cp.decompositions
 
-import constraints.Table
+import constraints.{Constraint, Table}
 import misc.CartesianProduct
 import models.UninstantiatedModel
 import models.operators.CPInstantiate
@@ -12,9 +12,9 @@ import scala.collection.mutable
 
 class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends DecompositionStrategy
 {
-  override def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int], SubproblemData)] = {
+  override def decompose(model: UninstantiatedModel, count: Int): List[(List[Constraint], SubproblemData)] = {
     if(count == 0) //no decomposition
-      return List((Map[IntVar,Int](), new SubproblemData(CartesianProduct.computeLog(vars), model.optimisationMethod)))
+      return List((List(), new SubproblemData(CartesianProduct.computeLog(vars), model.optimisationMethod)))
 
     var nbSolutions = 1
     var retval: List[(Map[IntVar, Int], SubproblemData)] = null
@@ -23,7 +23,9 @@ class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) =>
       if(nbSolutions >= count || i == vars.length - 1) {
         retval = tryDecomposition(model, vars.take(i+1), retval)
         if(retval.size >= count || i == vars.length - 1)
-          return retval
+          return retval.map((tuple) => {
+            (tuple._1.map(intassign => (intassign._1 == intassign._2).toConstraint).toList, tuple._2)
+          })
         nbSolutions = retval.size
       }
     }

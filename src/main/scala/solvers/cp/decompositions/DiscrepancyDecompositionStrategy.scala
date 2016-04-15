@@ -1,5 +1,6 @@
 package solvers.cp.decompositions
 
+import constraints.Constraint
 import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
 import vars.IntVar
@@ -8,7 +9,7 @@ import vars.IntVar
   * Sort subproblems by discrepancy
   */
 object DiscrepancyDecompositionStrategy {
-  def apply(sub: DecompositionStrategy): DecompositionStrategy = new DiscrepancyDecompositionStrategyMap(sub)
+  def apply(sub: DecompositionStrategy): DecompositionStrategy = new DiscrepancyDecompositionStrategyConstraintList(sub)
   def apply(sub: ClosureDecompositionStrategy): ClosureDecompositionStrategy = new DiscrepancyDecompositionStrategyClosure(sub)
 }
 
@@ -17,8 +18,8 @@ object DiscrepancyDecompositionStrategy {
   *
   * @param sub the initial decomposition
   */
-class DiscrepancyDecompositionStrategyMap(sub: DecompositionStrategy) extends DecompositionStrategy {
-  def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)] = {
+class DiscrepancyDecompositionStrategyConstraintList(sub: DecompositionStrategy) extends DecompositionStrategy {
+  def decompose(model: UninstantiatedModel, count: Int): List[(List[Constraint],SubproblemData)] = {
     sub.decompose(model, count).sortBy(_._2.discrepancy)
   }
 }

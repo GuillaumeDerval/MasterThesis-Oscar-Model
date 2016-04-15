@@ -9,6 +9,7 @@ import akka.remote.RemoteScope
 import akka.routing.{BroadcastRoutingLogic, Router}
 import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
+import constraints.Constraint
 import misc.ComputeTimeTaken._
 import misc.SearchStatistics
 import misc.TimeHelper._
@@ -33,7 +34,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   implicit val program = this
 
   protected val registeredWatchers: scala.collection.mutable.ListBuffer[(
-      (List[(Map[IntVar, Int], SubproblemData)]) => Watcher[RetVal],
+      (List[(List[Constraint], SubproblemData)]) => Watcher[RetVal],
       (Watcher[RetVal]) => Unit
     )] = ListBuffer()
 
@@ -43,7 +44,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param creator creates a new Watcher, given the subproblem list
     * @param initiator initiate the Watcher. Called after the resolution has begun.
     */
-  def registerWatcher(creator: (List[(Map[IntVar, Int], SubproblemData)]) => Watcher[RetVal],
+  def registerWatcher(creator: (List[(List[Constraint], SubproblemData)]) => Watcher[RetVal],
                       initiator: (Watcher[RetVal]) => Unit): Unit = {
     registeredWatchers += ((creator, initiator))
   }
@@ -148,18 +149,16 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     */
   def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => List[ActorRef]): (SearchStatistics, List[RetVal]) = {
     modelDeclaration.apply(model) {
-      val subproblems: List[(Map[IntVar, Int], SubproblemData)] = computeTimeTaken("decomposition", "solving") {
+      val subproblems: List[(List[Constraint], SubproblemData)] = computeTimeTaken("decomposition", "solving") {
         getDecompositionStrategy.decompose(model, subproblemCount)
       }
       println("Subproblems: " + subproblems.length.toString)
 
-      val queue = new LinkedBlockingQueue[(Int, Map[Int, Int])]()
+      val queue = new LinkedBlockingQueue[(Int, List[Constraint])]()
       val outputQueue = new LinkedBlockingQueue[SolvingMessage]()
 
       for (s <- subproblems.zipWithIndex)
-        queue.add((s._2, s._1._1.map(
-          { case (a, b) => (a.varid, b) }
-        )))
+        queue.add((s._2, s._1._1))
 
       //Create watchers
       val createdWatchers = registeredWatchers.map((tuple) => {
@@ -213,13 +212,21 @@ private object AkkaConfigCreator {
          actor {
            provider = "akka.remote.RemoteActorRefProvider"
            serializers {
-             java = "akka.serialization.JavaSerializer"
              kryo = "com.twitter.chill.akka.AkkaSerializer"
+             sp = "solvers.cp.DoSubproblemSerializer"
            }
            serialization-bindings {
-             "solvers.cp.SolvingMessage" = java
-             "models.Model" = java
+             "solvers.cp.SolvingMessage" = kryo
+             "solvers.cp.HelloMessage" = kryo
+             "solvers.cp.StartMessage" = kryo
+             "solvers.cp.AwaitingSPMessage" = kryo
+             "solvers.cp.DoneMessage" = kryo
+             "solvers.cp.BoundUpdateMessage" = kryo
+             "solvers.cp.AskForSolutionRecap" = kryo
+             "solvers.cp.SolutionRecapMessage" = kryo
+             "models.Model" = kryo
              "models.ModelDeclaration" = kryo
+             "solvers.cp.DoSubproblemMessage" = sp
            }
          }
          remote {
@@ -248,7 +255,7 @@ private object AkkaConfigCreator {
   * @tparam RetVal
   */
 class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal],
-                           subproblemQueue: LinkedBlockingQueue[(Int, Map[Int, Int])],
+                           subproblemQueue: LinkedBlockingQueue[(Int, List[Constraint])],
                            outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
   var done = false
@@ -340,6 +347,8 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
                           master: ActorRef, forceImmediateSend: Boolean = false) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
 
+  DoSubproblemSerializer.add(modelDeclaration)
+
   import context.dispatcher
 
   val uninstantiatedModel = modelDeclaration.getCurrentModel.asInstanceOf[UninstantiatedModel]
@@ -399,7 +408,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
   def receive = {
     case m: HelloMessage => sender() ! m
     case StartMessage() => master ! AwaitingSPMessage()
-    case DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) =>
+    case DoSubproblemMessage(spid: Int, sp: List[Constraint]) =>
       log.info("received subproblem")
       Future {
         solve_subproblem(spid, sp)
@@ -411,6 +420,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
       assert(null == objv && !forceImmediateSend)
       master ! SolutionRecapMessage(foundSolutions.toList)
     case AllDoneMessage() =>
+      DoSubproblemSerializer.remove(modelDeclaration) //allow to run GC on the modelDeclaration
       context.stop(self)
     case _ => log.info("received unknown message")
   }
@@ -418,18 +428,12 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
   /**
     * Solve the current subproblem; should be called from a Future.
     */
-  def solve_subproblem(spid: Int, sp: Map[Int, Int]): Unit = {
+  def solve_subproblem(spid: Int, sp: List[Constraint]): Unit = {
     val t0 = getThreadCpuTime
     val info = modelDeclaration.apply(cpmodel) {
       cpmodel.cpSolver.startSubjectTo() {
-        if(null != objv)
-          cpmodel.cpObjective.tightenMode = TightenType.NoTighten
-        for ((variable, value) <- sp) {
-          val v: CPIntVar = cpmodel.intRepresentatives.get(variable).realCPVar
-          cpmodel.cpSolver.post(v == value, CPPropagStrength.Strong)
-        }
-        if(null != objv)
-          cpmodel.cpObjective.tightenMode = TightenType.StrongTighten
+        for(constraint <- sp)
+          cpmodel.post(constraint)
 
         /*
          * Note: this has to be made after the call to the selection function, because it may overwrite the search

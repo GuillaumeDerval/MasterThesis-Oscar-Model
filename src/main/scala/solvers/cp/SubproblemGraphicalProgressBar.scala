@@ -4,6 +4,7 @@ import java.awt._
 import java.util.TimerTask
 import javax.swing._
 
+import constraints.Constraint
 import misc.TimeHelper._
 import misc.{ExponentialMovingAverage, FixedBinsHistogramDataset, SearchStatistics, SimpleMovingAverage}
 import org.jfree.chart.axis.{AxisLocation, NumberAxis}
@@ -424,7 +425,7 @@ object SubproblemGraphicalProgressBar {
   }
 
   def getRegisterer[RetVal] = {
-    val a = (subproblems: scala.collection.immutable.List[(Map[IntVar, Int], SubproblemData)]) => {
+    val a = (subproblems: scala.collection.immutable.List[(List[Constraint], SubproblemData)]) => {
       val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.length, 0)
       pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
       pb

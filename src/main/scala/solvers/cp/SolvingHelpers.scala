@@ -60,7 +60,7 @@ case class StartedMessage(spid: Int) extends SolverToMasterMessage with WatcherM
 case class AskForSolutionRecap() extends MasterToSolverMessage
 case class SolutionRecapMessage[RetVal](solutions: List[RetVal]) extends SolverToMasterMessage with WatcherMessage
 
-case class DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) extends MasterToSolverMessage
+case class DoSubproblemMessage(spid: Int, sp: List[Constraint]) extends MasterToSolverMessage
 case class BoundUpdateMessage(newBound: Int) extends MasterToSolverMessage
 case class AllDoneMessage() extends MasterToSolverMessage with WatcherMessage
 

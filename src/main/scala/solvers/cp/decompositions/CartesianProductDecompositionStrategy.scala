@@ -1,5 +1,6 @@
 package solvers.cp.decompositions
 
+import constraints.Constraint
 import misc.CartesianProduct
 import models.operators.CPInstantiate
 import models.{CPModel, UninstantiatedModel}
@@ -97,13 +98,13 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
 
 class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) extends DecompositionStrategy {
 
-  class SubproblemInfo(val assignment: List[(IntVar, Int)], val cartesianProduct: Double, val path: List[Int]) extends Ordered[SubproblemInfo] {
+  class SubproblemInfo(val assignment: List[Constraint], val cartesianProduct: Double, val path: List[Int]) extends Ordered[SubproblemInfo] {
     override def compare(that: SubproblemInfo): Int = cartesianProduct.compare(that.cartesianProduct)
   }
 
-  def decompose(model: UninstantiatedModel, count: Int): List[(Map[IntVar, Int],SubproblemData)] = {
+  def decompose(model: UninstantiatedModel, count: Int): List[(List[Constraint],SubproblemData)] = {
     if(count == 0) //no decomposition
-      return List[(Map[IntVar, Int],SubproblemData)]()
+      return List[(List[Constraint],SubproblemData)]()
 
     //Initialise a CP Model
     val vmodel = model.removeOptimisation()
@@ -118,8 +119,8 @@ class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) ex
         //Dequeue the largest subproblem, and compute its domain
         val sp = q.dequeue()
         cpmodel.cpSolver.pushState()
-        for(tuple <- sp.assignment)
-          cpmodel.post(tuple._1 == tuple._2)
+        for(c <- sp.assignment)
+          cpmodel.post(c)
 
         //Find the first possible value without unary domain
         var variable: IntVar = null
@@ -136,7 +137,7 @@ class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) ex
             cpmodel.post(variable == i._1)
             //cpmodel.cpSolver.post(cpmodel.getRepresentative(variable).asInstanceOf[CPIntVar] == i)
 
-            q += new SubproblemInfo(sp.assignment ++ List((variable, i._1)), CartesianProduct.computeLog(allVars), sp.path ++ List(i._2))
+            q += new SubproblemInfo((variable == i._1) :: sp.assignment, CartesianProduct.computeLog(allVars), sp.path ++ List(i._2))
           }
           catch { case nosol: NoSolutionException => }
           cpmodel.cpSolver.pop()
@@ -165,7 +166,7 @@ class CartesianProductRefinementDecompositionStrategy(allVars: Array[IntVar]) ex
 
     r.map(sp => {
       val spd = new SubproblemData(sp.cartesianProduct, model.optimisationMethod, sp.path.sum)
-      (sp.assignment.toMap, spd)
+      (sp.assignment, spd)
     })
   }
 }

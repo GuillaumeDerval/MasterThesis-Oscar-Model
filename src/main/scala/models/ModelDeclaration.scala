@@ -1,5 +1,7 @@
 package models
 
+import java.util.UUID
+
 import constraints.Constraint
 import misc.DynamicModelVariable
 import models.operators.ModelOperator
@@ -14,6 +16,8 @@ class ModelDeclaration extends Serializable {
 
   private val current_model: DynamicModelVariable = new DynamicModelVariable()
   current_model.value = BaseModel(this)
+
+  val uuid = UUID.randomUUID() //used by serialiser to ensure that Var are not resending models with them
 
   /**
    * Get the current model

@@ -7,7 +7,7 @@ import vars.IntVar
 /**
  * An expression that represents an Integer
  */
-trait IntExpression {
+trait IntExpression extends Serializable {
   /**
    * Evaluate this expression. All variables referenced have to be bound.
    * @throws VariableNotBoundException when a variable is not bound
