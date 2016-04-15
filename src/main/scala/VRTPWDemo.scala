@@ -11,68 +11,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 import scala.spores._
 
-object GolombRuler extends DistributedCPApp[String] with App {
-  override lazy val config = new DistributedCPAppConfig {
-    val size = trailArg[Int](descr = "Size of the golomb ruler")
-  }
 
-  def increasing(y: Array[IntVar]) = {
-    for (i <- 1 until y.length) {
-      post(y(i - 1) < y(i))
-    }
-  }
-
-  var n = config.size()
-
-  val m = Array.fill(n)(IntVar(0,(1 << (n - 1))-1))
-
-  post(m(0) == 0)
-
-  increasing(m)
-
-  // Number of marks and differences
-  val n_d = (n*n-n)/2
-
-  // Array of differences
-  val d = Array.ofDim[IntVar](n_d)
-
-  var k = 0
-  for(i <- 0 until n-1) {
-    for(j <- i+1 until n) {
-      d(k) = (m(j)-m(i)).reify()
-      post(d(k) >= ((j-i)*(j-i+1)/2))
-      k += 1
-    }
-  }
-
-  post(AllDifferent(d))
-
-  if (n > 2)
-    post(d(0) < d(n_d-1))
-
-  minimize(m(n - 1))
-
-  setSearch {
-    Branching.binaryStatic(m)
-  }
-
-  post(m(n-1) < 120)
-
-  onSolution(spore {
-    val m_ = m
-    () => {
-      val v = m_.map(_.max).mkString(",")
-      v
-    }
-  })
-
-  apply(SimplifySum)
-
-  setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(m))
-  val (stats, solutions) = solve()
-  println(stats)
-  println(solutions.last)
-}
 
 /** @author Renaud Hartert ren.hartert@gmail.com */
 object VRPTW  extends cp.LocalParallelCPProgram[String] with App {

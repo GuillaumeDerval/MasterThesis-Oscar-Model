@@ -13,9 +13,36 @@ import scala.collection.mutable.ListBuffer
 import scala.spores.NullarySpore
 
 trait Watcher[RetVal] {
+  /**
+    * Called when a subproblem just started
+    * @param spid id of the subproblem
+    */
   def startedSubproblem(spid: Int): Unit
+
+  /**
+    * Called when a subproblem ends
+    * @param spid id of the subproblem
+    * @param timeTaken time taken, in nanosecs
+    * @param searchStats search stats of the subproblem
+    */
   def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit
+
+  /**
+    * Called when a new solution is found (during the search)
+    * @param solution new solution
+    * @param newBound possible new bound
+    */
   def newSolution(solution: RetVal, newBound: Option[Int]): Unit
+
+  /**
+    * Called when a solver give a recap of the found solution (after the search, no duplicates with newSolution)
+    * @param solutions
+    */
+  def solutionRecap(solutions: List[RetVal])
+
+  /**
+    * Called when solving is completely done and all solutions have been sent. No more function calls will be made
+    */
   def allDone(): Unit
 }
 
@@ -28,6 +55,10 @@ case class AwaitingSPMessage() extends SolverToMasterMessage
 case class SolutionMessage[RetVal](solution: RetVal, newBound: Option[Int]) extends SolverToMasterMessage with WatcherMessage
 case class DoneMessage(spid: Int, timeTakenNS: Double, searchStats: SearchStatistics) extends SolverToMasterMessage with WatcherMessage
 case class StartedMessage(spid: Int) extends SolverToMasterMessage with WatcherMessage
+
+//Sent only on satisfaction problems, at the end of the computation
+case class AskForSolutionRecap() extends MasterToSolverMessage
+case class SolutionRecapMessage[RetVal](solutions: List[RetVal]) extends SolverToMasterMessage with WatcherMessage
 
 case class DoSubproblemMessage(spid: Int, sp: Map[Int, Int]) extends MasterToSolverMessage
 case class BoundUpdateMessage(newBound: Int) extends MasterToSolverMessage
@@ -45,6 +76,7 @@ class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
         case SolutionMessage(solution: RetVal, newBound: Option[Int]) => watchers.foreach(_.newSolution(solution, newBound))
         case DoneMessage(spid, newtimeTaken, searchStats) => watchers.foreach(_.endedSubproblem(spid, newtimeTaken, searchStats))
         case StartedMessage(spid) => watchers.foreach(_.startedSubproblem(spid))
+        case SolutionRecapMessage(solutions: List[RetVal]) => watchers.foreach(_.solutionRecap(solutions))
         case AllDoneMessage() =>
           done = true
           watchers.foreach(_.allDone())
@@ -71,6 +103,18 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       nSols = currentStatistics.nSols+1
     )
     results += solution
+  }
+
+  override def solutionRecap(solutions: List[RetVal]): Unit = {
+    currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes,
+      nFails = currentStatistics.nFails,
+      time = currentStatistics.time,
+      completed = currentStatistics.completed,
+      timeInTrail = currentStatistics.timeInTrail,
+      maxTrailSize = currentStatistics.maxTrailSize,
+      nSols = currentStatistics.nSols+solutions.length
+    )
+    results ++= solutions
   }
 
   override def allDone(): Unit = {

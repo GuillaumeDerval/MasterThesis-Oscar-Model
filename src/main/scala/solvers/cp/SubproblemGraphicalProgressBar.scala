@@ -15,6 +15,7 @@ import org.jfree.data.xy.XYSeries
 import org.jfree.util.ShapeUtilities
 import vars.IntVar
 
+import scala.List
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.swing.Swing
@@ -391,6 +392,16 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
       //chartPanel.updateUI()
       timer.cancel()
     }
+  }
+
+  /**
+    * Called when a solver give a recap of the found solution (after the search, no duplicates with newSolution)
+    *
+    * @param solutions
+    */
+  override def solutionRecap(solutions: List[T]): Unit = {
+    solutionsFound += 1
+    lastElapsedWallTime = getClockTime - startTime
   }
 }
 

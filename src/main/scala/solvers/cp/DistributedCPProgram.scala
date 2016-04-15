@@ -252,6 +252,7 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
                            outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
   var done = false
+  var solutionRecapReceived = 0
 
   val uninstantiatedModel = modelDeclaration.getCurrentModel.asInstanceOf[UninstantiatedModel]
 
@@ -286,10 +287,16 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
     case a: DoneMessage =>
       outputQueue.add(a)
       sendNextJob(sender)
-
     case SolutionMessage(solution, Some(b)) =>
       broadcastRouter.route(BoundUpdateMessage(b), self)
       outputQueue.add(SolutionMessage(solution, Some(b)))
+    case m: SolutionRecapMessage[RetVal] =>
+      outputQueue.add(m)
+      solutionRecapReceived += 1
+      if(solutionRecapReceived == broadcastRouter.routees.length) {//all done
+        outputQueue.add(AllDoneMessage())
+        context.system.terminate()
+      }
     case a: WatcherMessage => outputQueue.add(a)
     case _ => log.info("received unknown message")
   }
@@ -302,9 +309,17 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
   def sendNextJob(to: ActorRef): Unit = {
     if (subproblemQueue.isEmpty) {
       if (!done) {
-        broadcastRouter.route(AllDoneMessage(), self)
-        outputQueue.add(AllDoneMessage())
-        context.system.terminate()
+        //check SolutionRecap in main function if needed
+        if(!uninstantiatedModel.optimisationMethod.isInstanceOf[NoOptimisation])
+        {
+          broadcastRouter.route(AllDoneMessage(), self)
+          outputQueue.add(AllDoneMessage())
+          context.system.terminate()
+        }
+        else
+        {
+          broadcastRouter.route(AskForSolutionRecap(), self)
+        }
         done = true
       }
     }
@@ -322,7 +337,7 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
   * @tparam RetVal
   */
 class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal],
-                          master: ActorRef) extends Actor with IntBoundaryManager {
+                          master: ActorRef, forceImmediateSend: Boolean = false) extends Actor with IntBoundaryManager {
   val log = Logging(context.system, this)
 
   import context.dispatcher
@@ -345,6 +360,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
   }
 
   val on_solution: () => RetVal = modelDeclaration.onSolution
+  val foundSolutions: ListBuffer[RetVal] = ListBuffer()
 
   val solution: Model => Unit = cpmodel.optimisationMethod match {
     case m: Minimisation =>
@@ -362,7 +378,13 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
         master ! SolutionMessage(on_solution(), Some(v.max))
 
       }
-    case _ => (a) => master ! SolutionMessage(on_solution(), None)
+    case _ => (a) =>
+      if(forceImmediateSend)
+        master ! SolutionMessage(on_solution(), None)
+      else if(Unit.isInstanceOf[RetVal])
+        on_solution() //do not append to the list of solution, simply run the function
+      else
+        foundSolutions.append(on_solution())
   }
 
   val search: oscar.algo.search.Branching = objv match {
@@ -384,6 +406,10 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
       }
     case BoundUpdateMessage(newBound: Int) =>
       this.update_boundary(newBound)
+    case AskForSolutionRecap() =>
+      //should only be sent if we are on a satisfaction problem, and forceImmediateSend is off
+      assert(null == objv && !forceImmediateSend)
+      master ! SolutionRecapMessage(foundSolutions.toList)
     case AllDoneMessage() =>
       context.stop(self)
     case _ => log.info("received unknown message")
@@ -396,12 +422,14 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     val t0 = getThreadCpuTime
     val info = modelDeclaration.apply(cpmodel) {
       cpmodel.cpSolver.startSubjectTo() {
-        cpmodel.cpObjective.tightenMode = TightenType.NoTighten
+        if(null != objv)
+          cpmodel.cpObjective.tightenMode = TightenType.NoTighten
         for ((variable, value) <- sp) {
           val v: CPIntVar = cpmodel.intRepresentatives.get(variable).realCPVar
           cpmodel.cpSolver.post(v == value, CPPropagStrength.Strong)
         }
-        cpmodel.cpObjective.tightenMode = TightenType.StrongTighten
+        if(null != objv)
+          cpmodel.cpObjective.tightenMode = TightenType.StrongTighten
 
         /*
          * Note: this has to be made after the call to the selection function, because it may overwrite the search
@@ -434,6 +462,6 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
 
 object SolverActor {
   def props[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal], master: ActorRef): Props =
-    Props(classOf[SolverActor[RetVal]], modelDeclaration, master)
+    Props(classOf[SolverActor[RetVal]], modelDeclaration, master, false)
 }
 
