@@ -14,8 +14,7 @@ import misc.ComputeTimeTaken._
 import misc.SearchStatistics
 import misc.TimeHelper._
 import models._
-import oscar.cp.core.CPPropagStrength
-import oscar.cp.{CPIntVar, TightenType}
+import solvers.cp.branchings.Branching
 import solvers.cp.decompositions.DecompositionStrategy
 import vars.IntVar
 
@@ -396,7 +395,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
         foundSolutions.append(on_solution())
   }
 
-  val search: oscar.algo.search.Branching = objv match {
+  val search: Branching = objv match {
     case null => modelDeclaration.getSearch(cpmodel)
     case _ => new IntBoundaryUpdateSearchWrapper(modelDeclaration.getSearch(cpmodel), this, cpmodel.cpObjective)
   }

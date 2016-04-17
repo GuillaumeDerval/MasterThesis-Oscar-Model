@@ -7,11 +7,12 @@ import models.{CPModel, UninstantiatedModel}
 import oscar.cp.core.NoSolutionException
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.{Alternative, BranchingInstantiator}
 import vars.IntVar
 
 import scala.collection.mutable
 
-class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Branching) extends ClosureDecompositionStrategy {
+class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: BranchingInstantiator) extends ClosureDecompositionStrategy {
 
   def this(allVars: Array[IntVar], decompVars: Array[IntVar]) = this(allVars, Branching.naryStatic(decompVars))
   def this(allVars: Array[IntVar]) = this(allVars, allVars)
@@ -38,7 +39,7 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
   }
 
   def customSearch(a: CPModel, threshold: Double): Seq[oscar.cp.Alternative] = {
-    val base : Seq[oscar.cp.Alternative] = search.forModel(a).alternatives()
+    val base : Seq[Alternative] = search(a).alternatives()
     val trueDepth = currentDepth+1
     val trueDiscrepancy = currentDiscrepancy
     val currentCP = CartesianProduct.computeLog(allVars)
@@ -85,11 +86,11 @@ class CartesianProductDecompositionStrategy(allVars: Array[IntVar], search: Bran
 
     path_list.toList.map(path_with_data => {
       ((newModel: CPModel) => {
-        val newSearch = search.forModel(newModel)
-        var currentAlternatives = newSearch.alternatives()
+        val s = search(newModel)
+        var currentAlternatives = s.alternatives()
         for(i <- path_with_data._1) {
           currentAlternatives(i)()
-          currentAlternatives = newSearch.alternatives()
+          currentAlternatives = s.alternatives()
         }
       }, path_with_data._2)
     })

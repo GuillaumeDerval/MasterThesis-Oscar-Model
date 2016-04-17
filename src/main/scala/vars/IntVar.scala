@@ -1,8 +1,6 @@
 package vars
 
 import algebra.IntExpression
-import com.esotericsoftware.kryo.io.{Input, Output}
-import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import misc.VariableNotBoundException
 import models.ModelDeclaration
 import vars.domainstorage.int.IntDomainStorage

@@ -2,6 +2,7 @@ package models
 
 import oscar.cp.constraints.CPObjectiveUnit
 import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.Alternative
 import vars.IntVar
 
 trait OptimisationMethod
@@ -26,11 +27,11 @@ class SynchronizedIntBoundaryManager(initial: Int) extends IntBoundaryManager {
   def update_boundary(newval: Int) = boundary = newval
 }
 
-class IntBoundaryUpdateSearchWrapper(original: oscar.algo.search.Branching,
+class IntBoundaryUpdateSearchWrapper(original: Branching,
                                      boundaryManager:IntBoundaryManager,
-                                     cpobjective: CPObjectiveUnit) extends oscar.algo.search.Branching {
-  override def alternatives(): Seq[Branching.Alternative] = {
-    original.alternatives().map((a: Branching.Alternative) => {
+                                     cpobjective: CPObjectiveUnit) extends Branching {
+  override def alternatives(): Seq[Alternative] = {
+    original.alternatives().map((a: Alternative) => {
       () => {
         cpobjective.updateWorstBound(boundaryManager.get_boundary())
         cpobjective.best = boundaryManager.get_boundary()

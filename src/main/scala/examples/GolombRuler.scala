@@ -1,9 +1,9 @@
 package examples
 
 import constraints.AllDifferent
-import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions.CartesianProductRefinementDecompositionStrategy
+import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
 
 import scala.spores._

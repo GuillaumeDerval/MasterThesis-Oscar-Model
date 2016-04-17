@@ -11,19 +11,19 @@ trait LeafModel extends Model {
     * Post a new constraint
     * @param constraint constraint to add
     */
-  def post(constraint: Constraint): Unit
+  def post(constraint: Constraint): Boolean
 
   /**
     * Post a new constraint
     * @param constraint constraint to add
     */
-  def add(constraint: Constraint): Unit = post(constraint)
+  def add(constraint: Constraint): Boolean = post(constraint)
 
   /**
     * Post a new constraint
     * @param constraint constraint to add
     */
-  def += (constraint: Constraint): Unit = post(constraint)
+  def += (constraint: Constraint): Boolean = post(constraint)
 }
 
 abstract class InstantiatedModel(p: UninstantiatedModel) extends LeafModel {

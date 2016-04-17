@@ -5,11 +5,12 @@ import models.operators.CPInstantiate
 import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.BranchingInstantiator
 import vars.IntVar
 
 import scala.collection.mutable
 
-class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching, confidence: Double) extends ClosureDecompositionStrategy {
+class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: BranchingInstantiator, confidence: Double) extends ClosureDecompositionStrategy {
 
   def this(allVars: Array[IntVar], decompVars: Array[IntVar], confidence: Double) = this(allVars, Branching.naryStatic(decompVars), confidence)
   def this(allVars: Array[IntVar], confidence: Double) = this(allVars, allVars, confidence)
@@ -25,8 +26,8 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
     tryDecomposition(model, count)
   }
 
-  def customSearch(a: CPModel): Seq[oscar.cp.Alternative] = {
-    val base : Seq[oscar.cp.Alternative] = search.forModel(a).alternatives()
+  def customSearch(search: Branching): Seq[oscar.cp.Alternative] = {
+    val base : Seq[oscar.cp.Alternative] = search.alternatives()
 
     val trueDepth = currentDepth+1
     val trueDiscrepancy = currentDiscrepancy
@@ -74,7 +75,8 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
     implicit val declaration = cpmodel.declaration
 
     declaration.apply(cpmodel) {
-      cpmodel.cpSolver.search(customSearch(cpmodel))
+      val s = search(cpmodel)
+      cpmodel.cpSolver.search(customSearch(s))
       cpmodel.cpSolver.onSolution {
         path_list += ((currentPath.clone().slice(0, currentDepth), new SubproblemData(CartesianProduct.computeLog(allVars), model.optimisationMethod, currentDiscrepancy)))
       }
@@ -83,7 +85,7 @@ class ConfidenceDecompositionStrategy(allVars: Array[IntVar], search: Branching,
 
     path_list.toList.map(path_with_data => {
       ((newModel: CPModel) => {
-        val newSearch = search.forModel(newModel)
+        val newSearch = search(newModel)
         var currentAlternatives = newSearch.alternatives()
         for(i <- path_with_data._1) {
           currentAlternatives(i)()

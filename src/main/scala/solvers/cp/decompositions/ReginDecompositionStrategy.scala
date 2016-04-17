@@ -6,11 +6,12 @@ import models.UninstantiatedModel
 import models.operators.CPInstantiate
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.BranchingInstantiator
 import vars.IntVar
 
 import scala.collection.mutable
 
-class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends DecompositionStrategy
+class ReginDecompositionStrategy(vars: Array[IntVar], search: (Array[IntVar]) => BranchingInstantiator = Branching.naryStatic(_)) extends DecompositionStrategy
 {
   override def decompose(model: UninstantiatedModel, count: Int): List[(List[Constraint], SubproblemData)] = {
     if(count == 0) //no decomposition

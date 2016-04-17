@@ -1,7 +1,6 @@
 package vars
 
-import models.{ModelDeclaration, UninstantiatedModel}
-import vars.domainstorage.DomainStorage
+import models.ModelDeclaration
 
 /**
  * The top class for any model variable

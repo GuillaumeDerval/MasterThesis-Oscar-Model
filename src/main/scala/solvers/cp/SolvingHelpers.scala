@@ -5,8 +5,9 @@ import java.util.concurrent.LinkedBlockingQueue
 import constraints.Constraint
 import misc.SearchStatistics
 import models.operators.ModelOperator
-import models.{Model, ModelDeclaration, UninstantiatedModel}
+import models.{Model, ModelDeclaration}
 import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.{Alternative, BranchingInstantiator}
 import vars.IntVar
 
 import scala.collection.mutable.ListBuffer
@@ -15,12 +16,14 @@ import scala.spores.NullarySpore
 trait Watcher[RetVal] {
   /**
     * Called when a subproblem just started
+    *
     * @param spid id of the subproblem
     */
   def startedSubproblem(spid: Int): Unit
 
   /**
     * Called when a subproblem ends
+    *
     * @param spid id of the subproblem
     * @param timeTaken time taken, in nanosecs
     * @param searchStats search stats of the subproblem
@@ -29,6 +32,7 @@ trait Watcher[RetVal] {
 
   /**
     * Called when a new solution is found (during the search)
+    *
     * @param solution new solution
     * @param newBound possible new bound
     */
@@ -36,6 +40,7 @@ trait Watcher[RetVal] {
 
   /**
     * Called when a solver give a recap of the found solution (after the search, no duplicates with newSolution)
+    *
     * @param solutions
     */
   def solutionRecap(solutions: List[RetVal])
@@ -142,6 +147,7 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
 
 /**
   * Proxy most functions to an underlying model
+  *
   * @param md
   * @tparam CPModelType
   * @tparam Retval
@@ -151,9 +157,10 @@ class ModelProxy[CPModelType <: CPSolve[Retval], Retval](md: ModelDeclaration wi
 
   def getCurrentModel = modelDeclaration.getCurrentModel
 
-  def getSearch = md.getSearch
+  def getSearch: BranchingInstantiator = md.getSearch
   def setSearch(b: Branching): Unit = md.setSearch(b)
-  def setSearch(b: => Seq[oscar.algo.search.Alternative]): Unit = md.setSearch(b)
+  def setSearch(b: => Seq[Alternative]): Unit = md.setSearch(b)
+  def setSearch(b: BranchingInstantiator): Unit = md.setSearch(b)
 
   def onSolution = md.onSolution
   def onSolution(s: => Retval): Unit = md.onSolution(s)
@@ -161,30 +168,35 @@ class ModelProxy[CPModelType <: CPSolve[Retval], Retval](md: ModelDeclaration wi
 
   /**
     * Post a new constraint
+    *
     * @param constraint the constraint to post
     */
   def post(constraint: Constraint): Unit = modelDeclaration.post(constraint)
 
   /**
     * Add a new constraint to the model
+    *
     * @param constraint the constraint to add
     */
   def add(constraint: Constraint): Unit = modelDeclaration.add(constraint)
 
   /**
     * Apply a model operator
+    *
     * @param operator operator to apply
     */
   def apply[OutputType <: Model](operator: ModelOperator[OutputType]): Unit = modelDeclaration(operator)
 
   /**
     * Minimize on variable v
+    *
     * @param v variable to minimize
     */
   def minimize(v: IntVar) = modelDeclaration.minimize(v)
 
   /**
     * Maximize on variable v
+    *
     * @param v variable to maximize
     */
   def maximize(v: IntVar) = modelDeclaration.maximize(v)

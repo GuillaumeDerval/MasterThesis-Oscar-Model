@@ -18,9 +18,11 @@ class MemoCPModel(base: UninstantiatedModel) extends CPModel(base) {
     *
     * @param constraint constraint to add
     */
-  override def post(constraint: Constraint): Unit = {
-    super.post(constraint)
-    currentConstraintList = constraint :: currentConstraintList
+  override def post(constraint: Constraint): Boolean = {
+    val out = super.post(constraint)
+    if(out)
+      currentConstraintList = constraint :: currentConstraintList
+    out
   }
 
   /**

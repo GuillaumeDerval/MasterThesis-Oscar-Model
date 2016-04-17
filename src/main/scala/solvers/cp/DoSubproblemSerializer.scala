@@ -3,11 +3,10 @@ package solvers.cp
 import akka.actor.ExtendedActorSystem
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
-import com.twitter.chill.{KryoInstantiator, ScalaKryoInstantiator}
 import com.twitter.chill.akka.{ActorRefSerializer, AkkaSerializer}
+import com.twitter.chill.{IKryoRegistrar, KryoInstantiator, ScalaKryoInstantiator, toRich}
 import models.ModelDeclaration
 import vars.{BoolVar, IntVar}
-import com.twitter.chill.{IKryoRegistrar, toRich}
 
 import scala.collection.mutable
 

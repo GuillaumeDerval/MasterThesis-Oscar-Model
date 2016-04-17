@@ -8,6 +8,7 @@ import misc.SearchStatistics
 import misc.TimeHelper._
 import models._
 import oscar.cp.TightenType
+import solvers.cp.branchings.Branching
 import solvers.cp.decompositions.{ClosureDecompositionStrategy, DecompositionStrategy, DecompositionStrategyToClosureConverter}
 import vars.IntVar
 
@@ -91,7 +92,7 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
         }
 
         //TODO: test without this
-        val search: oscar.algo.search.Branching = boundaryManager match {
+        val search: Branching = boundaryManager match {
           case Some(bm) => new IntBoundaryUpdateSearchWrapper(getSearch(cpmodel), bm, cpmodel.cpObjective)
           case None => getSearch(cpmodel)
         }
@@ -108,6 +109,7 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
               cpmodel.cpObjective.tightenMode = TightenType.NoTighten
               sp(cpmodel)
               cpmodel.cpObjective.tightenMode = TightenType.StrongTighten
+
               /*
                * Note: this has to be made after the call to the selection function, because it may overwrite the search
                * and the solution handling function AND may want to use the original status at decomposition

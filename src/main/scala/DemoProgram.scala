@@ -6,7 +6,6 @@ import models.ModelDeclaration
 import oscar.util.selectMin
 import solvers.cp._
 import solvers.cp.branchings.Branching
-import solvers.cp.branchings.Branching.{branch, noAlternative}
 import solvers.cp.decompositions.SearchDecompositionStrategy
 import vars.IntVar
 
@@ -105,10 +104,10 @@ class DemoDistributedModel extends ModelDeclaration with CPSolve[Unit] {
 
   setSearch {
     selectMin(Array(s,e,n,d,m,o,r,y))(!_.isBound)(_.size) match {
-      case None => noAlternative
+      case None => Branching.noAlternative
       case Some(x) =>
         val v = x.min
-        branch { post(x == v) }{ post(x != v) }
+        Branching.branch { post(x == v) }{ post(x != v) }
     }
   }
 

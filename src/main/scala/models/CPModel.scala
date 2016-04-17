@@ -2,9 +2,10 @@ package models
 
 import algebra._
 import constraints._
+import oscar.algo.reversible.ReversibleInt
 import oscar.cp
 import oscar.cp.constraints.{CPObjective, CPObjectiveUnit, CPObjectiveUnitMaximize, CPObjectiveUnitMinimize}
-import oscar.cp.core.CPPropagStrength
+import oscar.cp.core.{CPOutcome, CPPropagStrength}
 import oscar.cp.{CPBoolVarOps, CPIntVarOps}
 import vars.cp.int.{CPBoolVar, CPIntVar}
 import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage, SetDomainStorage, SingletonDomainStorage}
@@ -27,6 +28,8 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
 
   if(cpObjective != null)
     cpSolver.optimize(new CPObjective(cpSolver, cpObjective))
+
+  def getReversibleInt(init: Int) = new ReversibleInt(cpSolver, init)
 
   override protected def instantiateAdaptableIntDomainStorage(adaptable: AdaptableIntDomainStorage): CPIntVar = {
     if(adaptable.min >= 0 && adaptable.max <= 1)
@@ -56,31 +59,30 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
       CPIntVar(interval, cpSolver)
   }
 
-  override def post(constraint: Constraint): Unit = {
+  override def post(constraint: Constraint): Boolean = {
     constraint match {
       case ExpressionConstraint(expr: BoolExpression) => postBooleanExpression(expr)
-      case AllDifferent(array) => cpSolver.post(cp.modeling.constraint.allDifferent(array.map(postIntExpressionAndGetVar)), CPPropagStrength.Weak)
-      case Table(array, values) => cpSolver.post(cp.modeling.constraint.table(array.map(postIntExpressionAndGetVar), values))
-      case MinCircuit(succ, distMatrixSucc, cost) => cpSolver.post(cp.modeling.constraint.minCircuit(succ.map(postIntExpressionAndGetVar), distMatrixSucc, postIntExpressionAndGetVar(cost)), CPPropagStrength.Strong)
-      case GCC(x, minVal, low, up) => cpSolver.post(new oscar.cp.constraints.GCC(x.map(postIntExpressionAndGetVar), minVal, low, up))
-      case BinPacking(x, w, l) => cpSolver.post(new cp.constraints.BinPacking(x.map(postIntExpressionAndGetVar), w, l.map(postIntExpressionAndGetVar)))
-      case Circuit(succ, symmetric) => cpSolver.post(new cp.constraints.Circuit(succ.map(postIntExpressionAndGetVar), symmetric), CPPropagStrength.Strong)
-      case Inverse(a, b) => cpSolver.post(new cp.constraints.Inverse(a.map(postIntExpressionAndGetVar), b.map(postIntExpressionAndGetVar)))
-      case MinAssignment(xarg, weightsarg, cost) => cpSolver.post(new cp.constraints.MinAssignment(xarg.map(postIntExpressionAndGetVar), weightsarg, postIntExpressionAndGetVar(cost)))
+      case AllDifferent(array) => cpSolver.post(cp.modeling.constraint.allDifferent(array.map(postIntExpressionAndGetVar)), CPPropagStrength.Weak) != CPOutcome.Failure
+      case Table(array, values) => cpSolver.post(cp.modeling.constraint.table(array.map(postIntExpressionAndGetVar), values)) != CPOutcome.Failure
+      case MinCircuit(succ, distMatrixSucc, cost) => cpSolver.post(cp.modeling.constraint.minCircuit(succ.map(postIntExpressionAndGetVar), distMatrixSucc, postIntExpressionAndGetVar(cost)), CPPropagStrength.Strong) != CPOutcome.Failure
+      case GCC(x, minVal, low, up) => cpSolver.post(new oscar.cp.constraints.GCC(x.map(postIntExpressionAndGetVar), minVal, low, up)) != CPOutcome.Failure
+      case BinPacking(x, w, l) => cpSolver.post(new cp.constraints.BinPacking(x.map(postIntExpressionAndGetVar), w, l.map(postIntExpressionAndGetVar))) != CPOutcome.Failure
+      case Circuit(succ, symmetric) => cpSolver.post(new cp.constraints.Circuit(succ.map(postIntExpressionAndGetVar), symmetric), CPPropagStrength.Strong) != CPOutcome.Failure
+      case Inverse(a, b) => cpSolver.post(new cp.constraints.Inverse(a.map(postIntExpressionAndGetVar), b.map(postIntExpressionAndGetVar))) != CPOutcome.Failure
+      case MinAssignment(xarg, weightsarg, cost) => cpSolver.post(new cp.constraints.MinAssignment(xarg.map(postIntExpressionAndGetVar), weightsarg, postIntExpressionAndGetVar(cost))) != CPOutcome.Failure
       case default => throw new Exception() //TODO: put a real exception here
     }
   }
 
-  def postBooleanExpression(expr: BoolExpression): Unit = {
+  def postBooleanExpression(expr: BoolExpression): Boolean = {
     expr match {
       case And(array) =>
-        for(i <- array)
-          postBooleanExpression(i)
+        array.forall(i => postBooleanExpression(i))
       case BinaryAnd(a, b) =>
         postBooleanExpression(a)
         postBooleanExpression(b)
       case BinaryOr(a, b) =>
-        cpSolver.add(oscar.cp.or(Array(postBoolExpressionAndGetVar(a),postBoolExpressionAndGetVar(b))))
+        cpSolver.add(oscar.cp.or(Array(postBoolExpressionAndGetVar(a),postBoolExpressionAndGetVar(b)))) != CPOutcome.Failure
       case Eq(a, b) =>
         postConstraintForPossibleConstant(a, b,
           (x,y)=>(y == x),
@@ -88,17 +90,17 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
           (x,y)=>(x == y)
         )
       case Gr(a, b) =>
-        cpSolver.add(new oscar.cp.constraints.Gr(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.Gr(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
       case GrEq(a, b) =>
-        cpSolver.add(new oscar.cp.constraints.GrEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.GrEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
       case Lr(a, b) =>
-        cpSolver.add(new oscar.cp.constraints.Le(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.Le(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
       case LrEq(a, b) =>
-        cpSolver.add(new oscar.cp.constraints.LeEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b)))
+        cpSolver.add(new oscar.cp.constraints.LeEq(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
       case Or(a) =>
-        cpSolver.add(oscar.cp.or(a.map(postBoolExpressionAndGetVar)))
+        cpSolver.add(oscar.cp.or(a.map(postBoolExpressionAndGetVar))) != CPOutcome.Failure
       case Not(a) =>
-        cpSolver.add(postBoolExpressionAndGetVar(a).not)
+        cpSolver.add(postBoolExpressionAndGetVar(a).not) != CPOutcome.Failure
       case NotEq(a, b) =>
         postConstraintForPossibleConstant(a, b,
           (x,y)=>(y != x),
@@ -106,14 +108,14 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
           (x,y)=>(x != y)
         )
       case InSet(a, b) =>
-        cpSolver.add(new cp.constraints.InSet(postIntExpressionAndGetVar(a), b))
+        cpSolver.add(new cp.constraints.InSet(postIntExpressionAndGetVar(a), b)) != CPOutcome.Failure
       case Implication(a, b) =>
         val v = oscar.cp.CPBoolVar()
-        cpSolver.add(new oscar.cp.constraints.Implication(v, postBoolExpressionAndGetVar(a), postBoolExpressionAndGetVar(b)))
-        cpSolver.add(v)
+        cpSolver.add(new oscar.cp.constraints.Implication(v, postBoolExpressionAndGetVar(a), postBoolExpressionAndGetVar(b))) != CPOutcome.Failure &&
+        cpSolver.add(v) != CPOutcome.Failure
       case Xor(a, b) => throw new Exception() //TODO: throw valid exception
       case v: BoolVar =>
-        cpSolver.add(getRepresentative(v).realCPVar.asInstanceOf[oscar.cp.CPBoolVar])
+        cpSolver.add(getRepresentative(v).realCPVar.asInstanceOf[oscar.cp.CPBoolVar])  != CPOutcome.Failure
     }
   }
 
@@ -215,11 +217,11 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
   def postConstraintForPossibleConstant(a: IntExpression, b: IntExpression,
                                         leftCst: (Int, oscar.cp.CPIntVar) => oscar.cp.Constraint,
                                         rightCst: (oscar.cp.CPIntVar, Int) => oscar.cp.Constraint,
-                                        allVar: (oscar.cp.CPIntVar, oscar.cp.CPIntVar) => oscar.cp.Constraint): Unit = {
+                                        allVar: (oscar.cp.CPIntVar, oscar.cp.CPIntVar) => oscar.cp.Constraint): Boolean = {
     (a,b) match {
-      case (Constant(value), variable:IntExpression) => cpSolver.add(leftCst(value, postIntExpressionAndGetVar(variable)))
-      case (variable: IntExpression, Constant(value)) => cpSolver.add(rightCst(postIntExpressionAndGetVar(variable), value))
-      case (v1: IntExpression, v2: IntExpression) => cpSolver.add(allVar(postIntExpressionAndGetVar(v1), postIntExpressionAndGetVar(v2)))
+      case (Constant(value), variable:IntExpression) => cpSolver.add(leftCst(value, postIntExpressionAndGetVar(variable))) != CPOutcome.Failure
+      case (variable: IntExpression, Constant(value)) => cpSolver.add(rightCst(postIntExpressionAndGetVar(variable), value)) != CPOutcome.Failure
+      case (v1: IntExpression, v2: IntExpression) => cpSolver.add(allVar(postIntExpressionAndGetVar(v1), postIntExpressionAndGetVar(v2))) != CPOutcome.Failure
     }
   }
 

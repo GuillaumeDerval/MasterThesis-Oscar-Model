@@ -6,11 +6,12 @@ import models.UninstantiatedModel
 import models.operators.CPInstantiate
 import solvers.cp.SubproblemData
 import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.BranchingInstantiator
 import vars.IntVar
 
 import scala.collection.mutable
 
-class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) => Branching = Branching.naryStatic(_)) extends DecompositionStrategy
+class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) => BranchingInstantiator = Branching.naryStatic(_)) extends DecompositionStrategy
 {
   val varsSize = vars.map(i => i.values().size)
 
@@ -48,7 +49,9 @@ class ReginDecompositionStrategy2(vars: Array[IntVar], search: (Array[IntVar]) =
           m += v -> v.min
         list += ((m.toMap, new SubproblemData(CartesianProduct.computeLog(svars),model.optimisationMethod)))
       }
-      cpmodel.cpSolver.search(search(svars).apply(cpmodel))
+      val instanciator = search(svars)
+      val searchB = instanciator(cpmodel)
+      cpmodel.cpSolver.search(searchB.alternatives())
       cpmodel.cpSolver.startSubjectTo() {
         if(oldvalues != null && oldvalues.nonEmpty) {
           val vars = oldvalues.head._1.keys.toArray

@@ -3,14 +3,14 @@ package solvers.cp.decompositions
 import models.operators.CPInstantiate
 import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
-import solvers.cp.branchings.Branching
+import solvers.cp.branchings.Branching.BranchingInstantiator
 
 import scala.collection.mutable
 
 /**
   * Created by dervalguillaume on 5/02/16.
   */
-class SearchDecompositionStrategy(search: Branching) extends ClosureDecompositionStrategy {
+class SearchDecompositionStrategy(search: BranchingInstantiator) extends ClosureDecompositionStrategy {
   var currentDepth = -1
   var currentPath: Array[Int] = null
 
@@ -25,7 +25,7 @@ class SearchDecompositionStrategy(search: Branching) extends ClosureDecompositio
   }
 
   def customSearch(a: CPModel, maxDepth: Int): Seq[oscar.cp.Alternative] = {
-    val base : Seq[oscar.cp.Alternative] = search.forModel(a).alternatives()
+    val base : Seq[oscar.cp.Alternative] = search(a).alternatives()
     val trueDepth = currentDepth+1
     if(trueDepth == maxDepth)
       oscar.cp.noAlternative
@@ -63,12 +63,12 @@ class SearchDecompositionStrategy(search: Branching) extends ClosureDecompositio
 
     path_list.toList.map(path => {
       ((newModel: CPModel) => {
-        val newSearch = search.forModel(newModel)
+        val newSearch = search(newModel)
         var currentAlternatives = newSearch.alternatives()
         for(i <- path._1; if i >= 0) {
           print(currentAlternatives.length)
           currentAlternatives(i)()
-          currentAlternatives = search.forModel(newModel).alternatives()
+          currentAlternatives = search(newModel).alternatives()
         }
       }, path._2)
     })

@@ -1,15 +1,12 @@
 import algebra.Sum
 import constraints._
-import models.operators.SimplifySum
 import solvers.cp
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions._
-import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
-import scala.spores._
 
 
 

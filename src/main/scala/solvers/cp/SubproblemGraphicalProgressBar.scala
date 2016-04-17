@@ -14,7 +14,6 @@ import org.jfree.chart.{ChartFactory, ChartPanel}
 import org.jfree.data.xy
 import org.jfree.data.xy.XYSeries
 import org.jfree.util.ShapeUtilities
-import vars.IntVar
 
 import scala.List
 import scala.collection.mutable

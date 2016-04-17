@@ -3,7 +3,6 @@ package solvers.cp.decompositions
 import constraints.Constraint
 import models.{CPModel, UninstantiatedModel}
 import solvers.cp.SubproblemData
-import vars.IntVar
 
 /**
   * Sort subproblems by discrepancy
