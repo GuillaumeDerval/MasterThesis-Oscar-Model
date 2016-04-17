@@ -77,7 +77,7 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
   def postEquality(left: IntExpression, right: IntExpression, second: Boolean = false): Boolean = (left, right) match {
     case (Minus(a, b), v: IntExpression) =>
       //cpSolver.add(oscar.cp.constraints.Minus(postIntExpressionAndGetVar(a), postIntExpressionAndGetVar(b), postIntExpressionAndGetVar(v)))
-      cpSolver.add(new oscar.cp.constraints.BinarySum(postIntExpressionAndGetVar(v),postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
+      cpSolver.add(new oscar.cp.constraints.BinarySum(postIntExpressionAndGetVar(v),postIntExpressionAndGetVar(b),postIntExpressionAndGetVar(a))) != CPOutcome.Failure
     case (BinarySum(a, b), v: IntExpression) =>
       cpSolver.add(new oscar.cp.constraints.BinarySum(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b),postIntExpressionAndGetVar(v))) != CPOutcome.Failure
     case (Prod(a, b), v: IntExpression) =>
