@@ -74,6 +74,25 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
     }
   }
 
+  def postEquality(left: IntExpression, right: IntExpression, second: Boolean = false): Boolean = (left, right) match {
+    case (Minus(a, b), v: IntExpression) =>
+      //cpSolver.add(oscar.cp.constraints.Minus(postIntExpressionAndGetVar(a), postIntExpressionAndGetVar(b), postIntExpressionAndGetVar(v)))
+      cpSolver.add(new oscar.cp.constraints.BinarySum(postIntExpressionAndGetVar(v),postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
+    case (BinarySum(a, b), v: IntExpression) =>
+      cpSolver.add(new oscar.cp.constraints.BinarySum(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b),postIntExpressionAndGetVar(v))) != CPOutcome.Failure
+    case (Prod(a, b), v: IntExpression) =>
+      cpSolver.add(new oscar.cp.constraints.MulVar(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b),postIntExpressionAndGetVar(v))) != CPOutcome.Failure
+    case _ =>
+      if(!second)
+        postEquality(right, left, second = true)
+      else
+        postConstraintForPossibleConstant(left, right,
+          (x,y)=>(y == x),
+          (x,y)=>(x == y),
+          (x,y)=>(x == y)
+        )
+  }
+
   def postBooleanExpression(expr: BoolExpression): Boolean = {
     expr match {
       case And(array) =>
@@ -84,11 +103,7 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
       case BinaryOr(a, b) =>
         cpSolver.add(oscar.cp.or(Array(postBoolExpressionAndGetVar(a),postBoolExpressionAndGetVar(b)))) != CPOutcome.Failure
       case Eq(a, b) =>
-        postConstraintForPossibleConstant(a, b,
-          (x,y)=>(y == x),
-          (x,y)=>(x == y),
-          (x,y)=>(x == y)
-        )
+        postEquality(a, b)
       case Gr(a, b) =>
         cpSolver.add(new oscar.cp.constraints.Gr(postIntExpressionAndGetVar(a),postIntExpressionAndGetVar(b))) != CPOutcome.Failure
       case GrEq(a, b) =>
