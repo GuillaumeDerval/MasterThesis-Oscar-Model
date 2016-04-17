@@ -2,7 +2,7 @@ import algebra.Sum
 import constraints._
 import solvers.cp
 import solvers.cp.branchings.Branching
-import solvers.cp.decompositions._
+import solvers.cp.decompositions.{ReginDecomposition, _}
 import vars.IntVar
 
 import scala.collection.mutable.ArrayBuffer
@@ -96,7 +96,7 @@ object VRPTW  extends cp.LocalParallelCPProgram[String] with App {
 
   //val visu = new VisualVRPTW(coordinates, succ, vehicles)
 
-  setDecompositionStrategy(new ReginDecompositionStrategy(pred))
+  setDecompositionStrategy(new ReginDecomposition(pred))
 
   onSolution {
     println(totalDistance)

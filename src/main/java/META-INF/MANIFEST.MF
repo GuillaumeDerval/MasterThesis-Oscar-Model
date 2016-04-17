@@ -18,5 +18,5 @@ Class-Path: swing-worker-1.1.jar config-1.3.0.jar swingx-1.0.jar chill
  ml_2.11-1.0.5.jar filters-2.0.235.jar servlet-api-2.3.jar logkit-1.0.
  1.jar chill-akka_2.11-0.8.0.jar jaxen-1.1.6.jar akka-remote_2.11-2.4.
  3.jar xercesImpl-2.8.1.jar
-Main-Class: GolombRuler
+Main-Class: examples.GolombRuler
 

@@ -6,7 +6,7 @@ import models.ModelDeclaration
 import oscar.util.selectMin
 import solvers.cp._
 import solvers.cp.branchings.Branching
-import solvers.cp.decompositions.SearchDecompositionStrategy
+import solvers.cp.decompositions.old.SearchDecompositionStrategy
 import vars.IntVar
 
 class DemoNQueens extends ModelDeclaration with LocalDecomposedCPSolve[String] {

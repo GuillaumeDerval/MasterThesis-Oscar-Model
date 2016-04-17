@@ -22,7 +22,7 @@ class NaryStaticOrderBranching(cp: CPModel, variables: Array[IntVar], valOrder: 
       depthRev.value = depth
       // Alternatives
       val variable = variables(depth)
-      valOrder(depth).map((value) => () => cp.post(variable == value).asInstanceOf[Unit])
+      valOrder(depth).map((value) => () => cp.post(variable == value):Unit)
     }
   }
 }

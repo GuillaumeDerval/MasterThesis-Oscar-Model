@@ -20,7 +20,7 @@ class MemoCPModel(base: UninstantiatedModel) extends CPModel(base) {
     */
   override def post(constraint: Constraint): Boolean = {
     val out = super.post(constraint)
-    if(out)
+    if(currentConstraintList != null && out) //currentConstraintList==null means we are instantiating
       currentConstraintList = constraint :: currentConstraintList
     out
   }
