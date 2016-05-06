@@ -3,7 +3,7 @@ package solvers.cp
 import java.util.concurrent.LinkedBlockingQueue
 
 import constraints.Constraint
-import misc.SearchStatistics
+import misc.{SPSearchStatistics, SearchStatistics}
 import models.operators.ModelOperator
 import models.{Model, ModelDeclaration}
 import solvers.cp.branchings.Branching
@@ -12,6 +12,7 @@ import vars.IntVar
 
 import scala.collection.mutable.ListBuffer
 import scala.spores.NullarySpore
+import misc.TimeHelper.getClockTime
 
 trait Watcher[RetVal] {
   /**
@@ -28,7 +29,7 @@ trait Watcher[RetVal] {
     * @param timeTaken time taken, in nanosecs
     * @param searchStats search stats of the subproblem
     */
-  def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit
+  def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SPSearchStatistics): Unit
 
   /**
     * Called when a new solution is found (during the search)
@@ -58,7 +59,7 @@ trait WatcherMessage extends SolvingMessage
 
 case class AwaitingSPMessage() extends SolverToMasterMessage
 case class SolutionMessage[RetVal](solution: RetVal, newBound: Option[Int]) extends SolverToMasterMessage with WatcherMessage
-case class DoneMessage(spid: Int, timeTakenNS: Double, searchStats: SearchStatistics) extends SolverToMasterMessage with WatcherMessage
+case class DoneMessage(spid: Int, timeTakenNS: Double, searchStats: SPSearchStatistics) extends SolverToMasterMessage with WatcherMessage
 case class StartedMessage(spid: Int) extends SolverToMasterMessage with WatcherMessage
 
 //Sent only on satisfaction problems, at the end of the computation
@@ -91,10 +92,13 @@ class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
 }
 
 class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
-  var currentStatistics = new SearchStatistics(0, 0, 0, false, 0, 0, 0)
+  var currentStatistics = new SearchStatistics(0, 0, 0, false, 0, 0, 0, 0)
   val results = ListBuffer[RetVal]()
+  var startTime: Long = 0
 
   def get = (currentStatistics, results.toList)
+
+  def start(): Unit = startTime = System.currentTimeMillis()
 
   override def startedSubproblem(spid: Int): Unit = {}
 
@@ -105,7 +109,8 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       completed = false,
       timeInTrail = currentStatistics.timeInTrail,
       maxTrailSize = currentStatistics.maxTrailSize,
-      nSols = currentStatistics.nSols+1
+      nSols = currentStatistics.nSols+1,
+      timeToLastSolution = System.currentTimeMillis()-startTime
     )
     results += solution
   }
@@ -117,7 +122,8 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       completed = currentStatistics.completed,
       timeInTrail = currentStatistics.timeInTrail,
       maxTrailSize = currentStatistics.maxTrailSize,
-      nSols = currentStatistics.nSols+solutions.length
+      nSols = currentStatistics.nSols+solutions.length,
+      timeToLastSolution = currentStatistics.timeToLastSolution
     )
     results ++= solutions
   }
@@ -129,18 +135,20 @@ class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
       completed = true,
       timeInTrail = currentStatistics.timeInTrail,
       maxTrailSize = currentStatistics.maxTrailSize,
-      nSols = currentStatistics.nSols
+      nSols = currentStatistics.nSols,
+      timeToLastSolution = currentStatistics.timeToLastSolution
     )
   }
 
-  override def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SearchStatistics): Unit = {
+  override def endedSubproblem(spid: Int, timeTaken: Double, searchStats: SPSearchStatistics): Unit = {
     currentStatistics = new SearchStatistics(nNodes = currentStatistics.nNodes+searchStats.nNodes,
       nFails = currentStatistics.nFails+searchStats.nFails,
       time = currentStatistics.time + searchStats.time,
       completed = false,
       timeInTrail = currentStatistics.timeInTrail+searchStats.timeInTrail,
       maxTrailSize = Math.max(currentStatistics.maxTrailSize, searchStats.maxTrailSize),
-      nSols = currentStatistics.nSols
+      nSols = currentStatistics.nSols,
+      timeToLastSolution = currentStatistics.timeToLastSolution
     )
   }
 }

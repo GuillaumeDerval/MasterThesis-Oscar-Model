@@ -6,7 +6,7 @@ import javax.swing._
 
 import constraints.Constraint
 import misc.TimeHelper._
-import misc.{ExponentialMovingAverage, FixedBinsHistogramDataset, SearchStatistics, SimpleMovingAverage}
+import misc._
 import org.jfree.chart.axis.{AxisLocation, NumberAxis}
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer
@@ -329,7 +329,7 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   }
 
 
-  override def endedSubproblem(spid: Int, timeTaken: Double, ss: SearchStatistics): Unit = {
+  override def endedSubproblem(spid: Int, timeTaken: Double, ss: SPSearchStatistics): Unit = {
     subproblemsTime(spid) = timeTaken
     subproblemsResolving -= spid
     subproblemsDone += 1

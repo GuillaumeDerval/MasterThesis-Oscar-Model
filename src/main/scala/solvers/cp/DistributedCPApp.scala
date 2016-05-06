@@ -19,8 +19,8 @@ class DistributedCPAppConfig extends Subcommand("master") {
   val threads = opt[Int](name="local", short='l', descr = "Number of local threads to start", default = None)
   val subproblemsPerWorker = opt[Int](name="sppw", short = 's', descr = "Number of subproblems per worker. Default is 100", default = Some(100))
   val host = opt[(String, Int)](name="host",
-    descr = "hostname and ip, separated by a ':', on which this master should be binded. Only useful if you use --remote. Should be callable by clients. Default is 127.0.0.1:2000.",
-    default = Some(("127.0.0.1", 2000)))(singleArgConverter(HostnameParser.parse))
+    descr = "hostname and ip, separated by a ':', on which this master should be binded. Only useful if you use --remote. Should be callable by clients. Default is 127.0.0.1:0. Port 0 means that it will be automatically selected by the OS.",
+    default = Some(("127.0.0.1", 0)))(singleArgConverter(HostnameParser.parse))
   val remoteList = opt[List[(String, Int)]](name="remote",
     descr = "Remote client hostname and port. Hostname and port should be separated by a ':' (if only hostname is provided, port defaults to 2001)",
     default = None)(listArgConverter(HostnameParser.parse))
@@ -41,7 +41,8 @@ class DistributedCPAppCompleteConfig(arguments: Seq[String]) extends ScallopConf
   val client = new Subcommand("client") {
     descr("Starts a remote client for distributed computation of this model")
     val hostname = opt[String](name="host", descr = "Hostname/IP on which this client should be binded. Default is 127.0.0.1.", default = Some("127.0.0.1"))
-    val port = opt[Int](name="port", descr = "Port on which this client should be binded.Default is 2001.", default = Some(2001))
+    val port = opt[Int](name="port", descr = "Port on which this client should be binded.Default is 0 (automatic port selection).", default = Some(0))
+    val registerDir = opt[String](name="register-dir", descr="Path to a dir where the client will create a file named hostname:port. Useful if you set port to 0.", default=None)
   }
 
   lazy val master = new DistributedCPAppConfig
@@ -71,7 +72,7 @@ abstract class DistributedCPApp[RetVal](md: ModelDeclaration with DecomposedCPSo
       //Nothing more to do here, the execution should continue in the subclass
     case Some(completeConfig.client) =>
       //Start client
-      new SimpleRemoteSolverSystem(completeConfig.client.hostname(), completeConfig.client.port())
+      new SimpleRemoteSolverSystem(completeConfig.client.hostname(), completeConfig.client.port(), completeConfig.client.registerDir.get)
       //Close app, since the client has done its work
       System.exit(0)
     case None =>

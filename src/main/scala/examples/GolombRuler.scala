@@ -59,6 +59,7 @@ object GolombRuler extends DistributedCPApp[String] with App {
     val m_ = m
     () => {
       val v = m_.map(_.max).mkString(",")
+      println(v)
       v
     }
   })

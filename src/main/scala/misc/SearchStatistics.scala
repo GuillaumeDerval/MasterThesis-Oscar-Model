@@ -1,8 +1,7 @@
 package misc
 
-class SearchStatistics(val nNodes: Int, val nFails: Int, val time: Long, val completed: Boolean,
-                       val timeInTrail: Long, val maxTrailSize: Int, val nSols: Int) extends Serializable {
-
+case class SPSearchStatistics(nNodes: Int, nFails: Int, time: Long, completed: Boolean,
+                              timeInTrail: Long, maxTrailSize: Int, nSols: Int) extends Serializable {
   /**
     * Copy constructor
     */
@@ -11,4 +10,10 @@ class SearchStatistics(val nNodes: Int, val nFails: Int, val time: Long, val com
   }
 
   override val toString: String = s"nNodes: $nNodes\nnFails: $nFails\ntime(ms): $time\ncompleted: $completed\ntimeInTrail: $timeInTrail\nnSols: $nSols\n"
+}
+
+case class SearchStatistics(nNodes: Int, nFails: Int, time: Long, completed: Boolean,
+                            timeInTrail: Long, maxTrailSize: Int, nSols: Int, timeToLastSolution: Long) extends Serializable {
+
+  override val toString: String = s"nNodes: $nNodes\nnFails: $nFails\ncpu time(ms): $time\nclock time to last solution(ms): $timeToLastSolution\ncompleted: $completed\ntimeInTrail: $timeInTrail\nnSols: $nSols\n"
 }

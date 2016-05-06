@@ -1,5 +1,7 @@
 package solvers.cp
 
+import java.nio.charset.Charset
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.LinkedBlockingQueue
 
 import akka.actor._
@@ -11,7 +13,7 @@ import akka.util.Timeout
 import com.typesafe.config.{Config, ConfigFactory}
 import constraints.Constraint
 import misc.ComputeTimeTaken._
-import misc.SearchStatistics
+import misc.{SPSearchStatistics, SearchStatistics}
 import misc.TimeHelper._
 import models._
 import solvers.cp.branchings.Branching
@@ -174,8 +176,11 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
         val system = ActorSystem("solving", systemConfig)
         val masterActor = system.actorOf(Props(new SolverMaster(md, queue, outputQueue)), "master")
 
+        //Ensures masterActor is aware that there are DeadLetters
+        system.eventStream.subscribe(masterActor, classOf[DeadLetter])
+
         // Create solvers and wait for them to be started
-        val subsolvers = createSolvers(system, masterActor)
+        val subsolvers: List[ActorRef] = createSolvers(system, masterActor)
         implicit val timeout = Timeout(2 minutes)
         subsolvers.map((a) => a ? HelloMessage()).map((f) => Await.result(f, Duration.Inf))
         (system, masterActor, subsolvers)
@@ -186,6 +191,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
 
       // Start solving
       computeTimeTaken("solving", "solving") {
+        statWatcher.start()
         // TODO this maybe should be in SolverMaster
         subsolvers.foreach((a) => a ! StartMessage())
 
@@ -199,8 +205,14 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   }
 }
 
-class SimpleRemoteSolverSystem(hostname: String, port: Int) {
+class SimpleRemoteSolverSystem(hostname: String, port: Int, registerDir: Option[String]) {
   val system = ActorSystem("solving", AkkaConfigCreator.remote(hostname, port))
+  if(registerDir.isDefined) {
+    val addr = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+    val filename = addr.host.get+":"+addr.port.get
+    val filepath = Paths.get(registerDir.get, filename)
+    Files.write(filepath, scala.collection.JavaConverters.asJavaIterableConverter(List[CharSequence](addr.toString)).asJava, Charset.forName("UTF-8"))
+  }
   Await.result(system.whenTerminated, Duration.Inf)
 }
 
@@ -208,6 +220,7 @@ private object AkkaConfigCreator {
   def remote(hostname: String, port: Int): Config = {
     ConfigFactory.parseString(s"""
        akka {
+         #loglevel = "DEBUG"
          actor {
            provider = "akka.remote.RemoteActorRefProvider"
            serializers {
@@ -223,12 +236,16 @@ private object AkkaConfigCreator {
              "solvers.cp.BoundUpdateMessage" = kryo
              "solvers.cp.AskForSolutionRecap" = kryo
              "solvers.cp.SolutionRecapMessage" = kryo
+             "solvers.cp.AllDoneMessage" = kryo
+             "solvers.cp.SolutionMessage" = kryo
              "models.Model" = kryo
              "models.ModelDeclaration" = kryo
              "solvers.cp.DoSubproblemMessage" = sp
            }
          }
          remote {
+           #log-received-messages = on
+           #log-frame-size-exceeding = 10b
            enabled-transports = ["akka.remote.netty.tcp"]
            netty.tcp {
              hostname = "$hostname"
@@ -255,9 +272,8 @@ private object AkkaConfigCreator {
   */
 class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal],
                            subproblemQueue: LinkedBlockingQueue[(Int, List[Constraint])],
-                           outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Actor with IntBoundaryManager {
+                           outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Actor {
   val log = Logging(context.system, this)
-  var done = false
   var solutionRecapReceived = 0
 
   val uninstantiatedModel = modelDeclaration.getCurrentModel.asInstanceOf[UninstantiatedModel]
@@ -268,18 +284,9 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
     case _               => 0
   }
 
-  def get_boundary(): Int = boundary
-
-  def update_boundary(newval: Int) = uninstantiatedModel.optimisationMethod match {
-    case m: Minimisation =>
-      if(boundary > newval)
-        boundary = newval
-    case m: Maximisation =>
-      if(boundary < newval)
-        boundary = newval
-  }
-
   var broadcastRouter = Router(BroadcastRoutingLogic())
+  var terminating = false
+  var spRemaining = subproblemQueue.size()
 
   /**
     * Process messages from master
@@ -288,48 +295,64 @@ class SolverMaster[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPS
     case AwaitingSPMessage() =>
       context watch sender
       broadcastRouter = broadcastRouter.addRoutee(sender)
-      context.sender() ! BoundUpdateMessage(get_boundary()) //ensure the new member has the last bound
+      context.sender() ! BoundUpdateMessage(boundary) //ensure the new member has the last bound
       sendNextJob(sender)
     case a: DoneMessage =>
+      spRemaining -= 1
       outputQueue.add(a)
       sendNextJob(sender)
-    case SolutionMessage(solution, Some(b)) =>
-      broadcastRouter.route(BoundUpdateMessage(b), self)
-      outputQueue.add(SolutionMessage(solution, Some(b)))
-    case m: SolutionRecapMessage[RetVal] =>
-      outputQueue.add(m)
-      solutionRecapReceived += 1
-      if(solutionRecapReceived == broadcastRouter.routees.length) {//all done
-        outputQueue.add(AllDoneMessage())
-        context.system.terminate()
-      }
-    case a: WatcherMessage => outputQueue.add(a)
-    case _ => log.info("received unknown message")
-  }
+      if (spRemaining == 0) {
+        assert(subproblemQueue.isEmpty)
 
-  /**
-    * Send a new sp to a given actor. If there is no subproblem, broadcast a AllDone message to everyone
-    *
-    * @param to
-    */
-  def sendNextJob(to: ActorRef): Unit = {
-    if (subproblemQueue.isEmpty) {
-      if (!done) {
         //check SolutionRecap in main function if needed
         if(!uninstantiatedModel.optimisationMethod.isInstanceOf[NoOptimisation])
         {
           broadcastRouter.route(AllDoneMessage(), self)
           outputQueue.add(AllDoneMessage())
+          terminating = true
           context.system.terminate()
         }
         else
         {
           broadcastRouter.route(AskForSolutionRecap(), self)
         }
-        done = true
       }
-    }
-    else {
+    case SolutionMessage(solution, Some(b)) =>
+      val (updateBound, newSolution) =  uninstantiatedModel.optimisationMethod match {
+        case m: Minimisation    => (boundary > b, boundary > b)
+        case m: Maximisation    => (boundary < b, boundary < b)
+        case m: NoOptimisation  => (false, true)
+      }
+      if(updateBound) {
+        boundary = b
+        broadcastRouter.route(BoundUpdateMessage(b), self)
+      }
+      if(newSolution)
+        outputQueue.add(SolutionMessage(solution, Some(b)))
+    case m: SolutionRecapMessage[RetVal] =>
+      outputQueue.add(m)
+      solutionRecapReceived += 1
+      if(solutionRecapReceived == broadcastRouter.routees.length) {//all done
+        outputQueue.add(AllDoneMessage())
+        terminating = true
+        context.system.terminate()
+      }
+    case a: WatcherMessage => outputQueue.add(a)
+    case DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) =>
+      if(!terminating) {
+        println("Dead letter! Forcing shutdown...")
+        System.exit(1)
+      }
+    case _ => log.info("received unknown message")
+  }
+
+  /**
+    * Send a new sp to a given actor. If there is no subproblem, do nothing
+    *
+    * @param to
+    */
+  def sendNextJob(to: ActorRef): Unit = {
+    if (!subproblemQueue.isEmpty) {
       val next = subproblemQueue.poll()
       to ! DoSubproblemMessage(next._1, next._2)
     }
@@ -372,14 +395,12 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
 
   val solution: Model => Unit = cpmodel.optimisationMethod match {
     case m: Minimisation =>
-      log.info("MIN")
       (a) => {
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
         master ! SolutionMessage(on_solution(), Some(v.max))
       }
     case m: Maximisation =>
-      log.info("MAX")
       (a) => {
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
@@ -389,10 +410,11 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     case _ => (a) =>
       if(forceImmediateSend)
         master ! SolutionMessage(on_solution(), None)
-      else if(Unit.isInstanceOf[RetVal])
-        on_solution() //do not append to the list of solution, simply run the function
-      else
-        foundSolutions.append(on_solution())
+      else {
+        val v = on_solution()
+        if(!v.isInstanceOf[Unit])
+          foundSolutions.append(on_solution())
+      }
   }
 
   val search: Branching = objv match {
@@ -408,7 +430,6 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     case m: HelloMessage => sender() ! m
     case StartMessage() => master ! AwaitingSPMessage()
     case DoSubproblemMessage(spid: Int, sp: List[Constraint]) =>
-      log.info("received subproblem")
       Future {
         solve_subproblem(spid, sp)
       }
@@ -455,7 +476,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     }
     cpmodel.cpSolver.searchEngine.clearOnSolution()
     val t1 = getThreadCpuTime
-    master ! DoneMessage(spid, t1 - t0, new SearchStatistics(info))
+    master ! DoneMessage(spid, t1 - t0, new SPSearchStatistics(info))
   }
 
   def get_boundary(): Int = boundary
@@ -467,4 +488,3 @@ object SolverActor {
   def props[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSolve[RetVal], master: ActorRef): Props =
     Props(classOf[SolverActor[RetVal]], modelDeclaration, master, false)
 }
-

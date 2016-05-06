@@ -4,7 +4,7 @@ import java.util
 import java.util.concurrent.LinkedBlockingQueue
 
 import misc.ComputeTimeTaken.computeTimeTaken
-import misc.SearchStatistics
+import misc.{SPSearchStatistics, SearchStatistics}
 import misc.TimeHelper._
 import models._
 import oscar.cp.TightenType
@@ -131,7 +131,7 @@ class LocalParallelCPProgram[RetVal](md: ModelDeclaration with LocalDecomposedCP
             }
             cpmodel.cpSolver.searchEngine.clearOnSolution()
             val t1 = getThreadCpuTime
-            outputQueue.add(DoneMessage(spid, t1-t0, new SearchStatistics(info)))
+            outputQueue.add(DoneMessage(spid, t1-t0, new SPSearchStatistics(info)))
           }
         }
       }

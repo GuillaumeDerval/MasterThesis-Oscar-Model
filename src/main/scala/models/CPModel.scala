@@ -70,6 +70,7 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
       case Circuit(succ, symmetric) => cpSolver.post(new cp.constraints.Circuit(succ.map(postIntExpressionAndGetVar), symmetric), CPPropagStrength.Strong) != CPOutcome.Failure
       case Inverse(a, b) => cpSolver.post(new cp.constraints.Inverse(a.map(postIntExpressionAndGetVar), b.map(postIntExpressionAndGetVar))) != CPOutcome.Failure
       case MinAssignment(xarg, weightsarg, cost) => cpSolver.post(new cp.constraints.MinAssignment(xarg.map(postIntExpressionAndGetVar), weightsarg, postIntExpressionAndGetVar(cost))) != CPOutcome.Failure
+      case StrongEq(a, b) => cpSolver.post(postIntExpressionAndGetVar(a) == postIntExpressionAndGetVar(b), CPPropagStrength.Strong) != CPOutcome.Failure
       case default => throw new Exception() //TODO: put a real exception here
     }
   }
