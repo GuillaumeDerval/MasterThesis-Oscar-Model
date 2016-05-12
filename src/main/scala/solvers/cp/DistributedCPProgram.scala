@@ -35,8 +35,8 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
   implicit val program = this
 
   protected val registeredWatchers: scala.collection.mutable.ListBuffer[(
-      (List[(List[Constraint], SubproblemData)]) => Watcher[RetVal],
-      (Watcher[RetVal]) => Unit
+      List[SubProblem] => Watcher[RetVal],
+      Watcher[RetVal] => Unit
     )] = ListBuffer()
 
   /**
@@ -45,7 +45,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     * @param creator creates a new Watcher, given the subproblem list
     * @param initiator initiate the Watcher. Called after the resolution has begun.
     */
-  def registerWatcher(creator: (List[(List[Constraint], SubproblemData)]) => Watcher[RetVal],
+  def registerWatcher(creator: (List[SubProblem]) => Watcher[RetVal],
                       initiator: (Watcher[RetVal]) => Unit): Unit = {
     registeredWatchers += ((creator, initiator))
   }
@@ -150,7 +150,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
     */
   def solve(model: UninstantiatedModel, subproblemCount: Int, systemConfig: Config, createSolvers: (ActorSystem, ActorRef) => List[ActorRef]): (SearchStatistics, List[RetVal]) = {
     modelDeclaration.apply(model) {
-      val subproblems: List[(List[Constraint], SubproblemData)] = computeTimeTaken("decomposition", "solving") {
+      val subproblems: List[SubProblem] = computeTimeTaken("decomposition", "solving") {
         getDecompositionStrategy.decompose(model, subproblemCount)
       }
       println("Subproblems: " + subproblems.length.toString)
@@ -159,7 +159,7 @@ class DistributedCPProgram[RetVal](md: ModelDeclaration with DecomposedCPSolve[R
       val outputQueue = new LinkedBlockingQueue[SolvingMessage]()
 
       for (s <- subproblems.zipWithIndex)
-        queue.add((s._2, s._1._1))
+        queue.add((s._2, s._1.constraints))
 
       //Create watchers
       val createdWatchers = registeredWatchers.map((tuple) => {

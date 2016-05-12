@@ -5,6 +5,7 @@ import solvers.cp.decompositions.DecompositionStrategy
 
 /**
   * Allow to decompose into subproblems for solving in a distributed environment
+  *
   * @tparam RetVal
   */
 trait DecomposedCPSolve[RetVal] extends CPSolve[RetVal] {

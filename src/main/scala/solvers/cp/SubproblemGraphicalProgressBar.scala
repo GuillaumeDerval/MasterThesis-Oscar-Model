@@ -234,18 +234,21 @@ class SubproblemGraphicalProgressBar[T](nbSubproblems: Int, nbThreads: Int) exte
   var cartesianProductC: Array[Double] = null
   var cartesianProductCCurrent: Double = 0
 
-  def setSubproblemsData(cc: Iterable[(Int, SubproblemData)]) = {
+  def setSubproblemsData(cc: Iterable[(Int, SubProblem)]) = {
     Swing.onEDT {
       for ((i, j) <- cc) {
-        ccProblemPlotPoints.add(i, j.cartesianProductLog)
-        minBoundProblemPlotPoints.add(i, j.discrepancy)
+        j.getData(SubProblemDiscrepancy).foreach(v => minBoundProblemPlotPoints.add(i, v))
+        j.getData(SubProblemCartesianProductLog).foreach(v => ccProblemPlotPoints.add(i, v))
       }
     }
 
-    val cartesianProductLogMax = cc.map(v => v._2.cartesianProductLog).max
-    cartesianProductC = cc.map(v => Math.exp(v._2.cartesianProductLog-cartesianProductLogMax)).toArray
-    cartesianProductCSum = cartesianProductC.foldLeft(0.0d)((current, v) => current + v)
-    cartesianProductCCurrent = 0
+    val cartProds = cc.flatMap(v => v._2.getData(SubProblemCartesianProductLog))
+    if(cartProds.nonEmpty) {
+      val cartesianProductLogMax = cartProds.max
+      cartesianProductC = cartProds.map(v => Math.exp(v-cartesianProductLogMax)).toArray
+      cartesianProductCSum = cartesianProductC.foldLeft(0.0d)((current, v) => current + v)
+      cartesianProductCCurrent = 0
+    }
   }
 
   private def updateOnEDT(): Unit = {
@@ -424,9 +427,9 @@ object SubproblemGraphicalProgressBar {
   }
 
   def getRegisterer[RetVal] = {
-    val a = (subproblems: scala.collection.immutable.List[(List[Constraint], SubproblemData)]) => {
+    val a = (subproblems: scala.collection.immutable.List[SubProblem]) => {
       val pb = SubproblemGraphicalProgressBar[RetVal](subproblems.length, 0)
-      pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1._2)))
+      pb.setSubproblemsData(subproblems.zipWithIndex.map(m => (m._2, m._1)))
       pb
     }
     val b = (w: Watcher[RetVal]) => {

@@ -2,7 +2,7 @@ package examples
 
 import constraints.AllDifferent
 import solvers.cp.branchings.Branching
-import solvers.cp.decompositions.CartesianProductRefinementDecompositionStrategy
+import solvers.cp.decompositions.CartProdRefinement
 import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
 
@@ -24,7 +24,7 @@ object NQueens extends DistributedCPApp[Unit] with App {
   setSearch(Branching.binaryFirstFail(queens))
   onSolution {}
 
-  setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(queens))
+  setDecompositionStrategy(new CartProdRefinement(queens, Branching.naryStatic(queens)))
   val (stats, solutions) = solve()
   println(stats)
 }

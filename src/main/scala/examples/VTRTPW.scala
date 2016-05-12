@@ -3,7 +3,7 @@ package examples
 import algebra.Sum
 import constraints._
 import solvers.cp.branchings.Branching
-import solvers.cp.decompositions.CartesianProductRefinementDecompositionStrategy
+import solvers.cp.decompositions.CartProdRefinement
 import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
 
@@ -92,7 +92,7 @@ object VTRTPW extends DistributedCPApp[Int] {
 
   onSolution {totalDistance.min}
 
-  setDecompositionStrategy(new CartesianProductRefinementDecompositionStrategy(pred))
+  setDecompositionStrategy(new CartProdRefinement(pred, Branching.naryStatic(pred)))
 
   val (stats, solutions) = solve()
   println(stats, solutions)
