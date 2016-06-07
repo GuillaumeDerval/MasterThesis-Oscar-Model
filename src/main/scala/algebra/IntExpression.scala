@@ -96,10 +96,21 @@ object IntExpression
 {
   implicit def constant(v: Int): Constant = new Constant(v)
   implicit def array_element[A <% IntExpression](v: Array[A]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.asInstanceOf[Array[IntExpression]])
-  implicit def array_element(v: Array[Int]): ArrayIntExpressionElementConstraintBuilder = new ArrayIntExpressionElementConstraintBuilder(v.map(new Constant(_)))
+  implicit def array_element(v: Array[Int]): ArrayIntExpressionElementConstraintBuilderCst = new ArrayIntExpressionElementConstraintBuilderCst(v)
+  implicit def array_element2D[A <% IntExpression](v: Array[Array[A]]): ArrayIntExpressionElementConstraintBuilder2D = new ArrayIntExpressionElementConstraintBuilder2D(v.asInstanceOf[Array[Array[IntExpression]]])
+  implicit def array_element2D(v: Array[Array[Int]]): ArrayIntExpressionElementConstraintBuilderCst2D = new ArrayIntExpressionElementConstraintBuilderCst2D(v)
 
   class ArrayIntExpressionElementConstraintBuilder(val array: Array[IntExpression]) {
     def apply(id: IntExpression): IntExpression = new Element(array, id)
+  }
+  class ArrayIntExpressionElementConstraintBuilder2D(val array: Array[Array[IntExpression]]) {
+    def apply(id1: IntExpression)(id2: IntExpression): IntExpression = new Element2D(array, id1, id2)
+  }
+  class ArrayIntExpressionElementConstraintBuilderCst(val array: Array[Int]) {
+    def apply(id: IntExpression): IntExpression = new ElementCst(array, id)
+  }
+  class ArrayIntExpressionElementConstraintBuilderCst2D(val array: Array[Array[Int]]) {
+    def apply(id1: IntExpression)(id2: IntExpression): IntExpression = new ElementCst2D(array, id1, id2)
   }
 
   implicit def array_intvar(v: Array[IntVar]): Array[IntExpression] = v.asInstanceOf[Array[IntExpression]]

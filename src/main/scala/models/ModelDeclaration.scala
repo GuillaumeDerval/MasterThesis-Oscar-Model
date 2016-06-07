@@ -44,6 +44,7 @@ class ModelDeclaration extends Serializable {
   def post(constraint: Constraint): Unit = current_model.value match {
     case m: InstantiatedModel => postinstantiated(m, constraint)
     case m: UninstantiatedModel => postUninstantiated(m, constraint)
+    case null => println("WTF")
   }
 
   /**

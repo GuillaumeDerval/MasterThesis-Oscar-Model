@@ -1,7 +1,7 @@
 package visualisation
 
 import algebra._
-import constraints.{Constraint, ExpressionConstraint}
+import constraints.{AllDifferent, Constraint, ExpressionConstraint}
 import org.graphstream.graph.implementations.SingleGraph
 import org.graphstream.graph.{Edge, Graph, Node}
 import org.graphstream.ui.view.{Viewer, ViewerListener}

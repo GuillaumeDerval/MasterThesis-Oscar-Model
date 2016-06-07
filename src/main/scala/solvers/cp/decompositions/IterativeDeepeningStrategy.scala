@@ -33,7 +33,7 @@ abstract class IterativeDeepeningStrategy[Threshold](searchInstantiator: Branchi
     * @return Oscar-CP alternatives, that are originally from ``search``, if below the Threshold, else, oscar.cp.noAlternative.
     */
   private def customSearch(a: MemoCPModel, search: Branching, threshold: Threshold): Seq[oscar.cp.Alternative] = {
-    val base : Seq[Alternative] = search.alternatives()
+    val base : Seq[Alternative] = search.alternatives().toList
     val trueDepth = currentDepth+1
     val trueDiscrepancy = currentDiscrepancy
     if(shouldStopSearch(a, threshold, trueDepth, trueDiscrepancy)) {
@@ -54,43 +54,45 @@ abstract class IterativeDeepeningStrategy[Threshold](searchInstantiator: Branchi
     }
   }
 
-  private def tryDecomposition(model: MemoCPModel, baseSearch: Branching, threshold: Threshold): List[SubProblem] = {
+  private def tryDecomposition(model: MemoCPModel, threshold: Threshold): List[SubProblem] = {
     // TODO: this can be improved a lot once MemoCPModel has been rewritten to integrate it in the oscar search
     currentDepth = -1
     currentPath = Array.tabulate(32)(_ => -1) //32 should be enough for decomposition
     currentDiscrepancy = 0
-
-    model.pushState()
 
     // To store the path
     val path_list = new mutable.MutableList[(Array[Int], Int)]
 
     // Search all the possibles paths
     model.apply {
+      val baseSearch = searchInstantiator(model)
+      model.pushState()
+
       model.cpSolver.search(customSearch(model, baseSearch, threshold))
       model.cpSolver.onSolution {
         path_list += ((currentPath.clone().slice(0, currentDepth+1), currentDiscrepancy))
       }
       model.cpSolver.start()
-    }
 
-    model.popState()
-
-    // For each path, generate the list of constraints added
-    path_list.toList.map(path_with_data => {
-      //re-apply the path
-      model.pushState()
-      var currentAlternatives = baseSearch.alternatives()
-      for(i <- path_with_data._1) {
-        currentAlternatives(i)()
-        currentAlternatives = baseSearch.alternatives()
-      }
-      //get the constraints
-      val constraints = model.getAddedConstraints
       model.popState()
-      //generate subproblem object
-      new SubProblem(constraints).addData(SubProblemDiscrepancy, path_with_data._2)
-    })
+
+      // For each path, generate the list of constraints added
+      path_list.toList.map(path_with_data => {
+        val newSearch = searchInstantiator(model)
+        //re-apply the path
+        model.pushState()
+        var currentAlternatives = newSearch.alternatives().toList
+        for(i <- path_with_data._1) {
+          currentAlternatives(i)()
+          currentAlternatives = newSearch.alternatives().toList
+        }
+        //get the constraints
+        val constraints = model.getAddedConstraints
+        model.popState()
+        //generate subproblem object
+        new SubProblem(constraints).addData(SubProblemDiscrepancy, path_with_data._2)
+      })
+    }
   }
 
   /**
@@ -103,7 +105,6 @@ abstract class IterativeDeepeningStrategy[Threshold](searchInstantiator: Branchi
   override def decompose(baseModel: UninstantiatedModel, count: Int): List[SubProblem] = {
     // Instantiate model and search
     val model = new MemoCPModel(baseModel.removeOptimisation())
-    val baseSearch = searchInstantiator(model)
 
     // Threshold to stop going further in the research
     var threshold = initThreshold(model, count)
@@ -113,7 +114,7 @@ abstract class IterativeDeepeningStrategy[Threshold](searchInstantiator: Branchi
 
     // Retry until we have enough subproblems
     while(decomp.size < count) {
-      decomp = tryDecomposition(model, baseSearch, threshold)
+      decomp = tryDecomposition(model, threshold)
       threshold = nextThreshold(threshold, decomp, count)
     }
 

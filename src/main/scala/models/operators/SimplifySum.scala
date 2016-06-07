@@ -4,6 +4,8 @@ import algebra._
 import constraints.ExpressionConstraint
 import models.UninstantiatedModel
 
+import scala.collection.mutable
+
 
 object SimplifySum extends ModelOperator[UninstantiatedModel] {
   def apply(model: UninstantiatedModel): UninstantiatedModel = {
@@ -11,7 +13,6 @@ object SimplifySum extends ModelOperator[UninstantiatedModel] {
       case ExpressionConstraint(expr) => new ExpressionConstraint(SimplifySum(expr))
       case constraint@default => constraint
     }
-
     model.copy(constraints = newConstraints)
   }
 
@@ -23,7 +24,16 @@ object SimplifySum extends ModelOperator[UninstantiatedModel] {
     val s1 = convertToWeightedSum(expr)
     val s2 = updateWeightedSumCoefficient(s1)
     val s3 = mergeWeightedSums(s2)
-    transformBackWeightedSum(s3)
+    val s4 = simplifyEq(s3)
+    transformBackWeightedSum(s4)
+  }
+
+  private def simplifyEq(expr: IntExpression): IntExpression = {
+    val nexpr = expr.mapSubexpressions(convertToWeightedSum)
+    nexpr match {
+      case Eq(WeightedSum(x, wx), WeightedSum(y, wy)) => Eq(mergeWeightedSums(WeightedSum(x++y, wx ++ wy.map(i => -i))), 0)
+      case default => nexpr
+    }
   }
 
   private def convertToWeightedSum(expr: IntExpression): IntExpression = {
@@ -62,10 +72,19 @@ object SimplifySum extends ModelOperator[UninstantiatedModel] {
     nexpr match {
       case WeightedSum(x, w) => {
         val (nx, nw) = x.zip(w).flatMap(updateWeightedSum).unzip
-        new WeightedSum(nx, nw)
+        val (fnx, fnw) = findRedundancy(nx, nw)
+        new WeightedSum(fnx, fnw)
       }
       case default => nexpr
     }
+  }
+
+  private def findRedundancy(exprs: Array[IntExpression], weights: Array[Int]): (Array[IntExpression], Array[Int]) = {
+    val m = mutable.HashMap[IntExpression, Int]()
+    for((expr, w) <- exprs.zip(weights)) {
+      m.update(expr, m.getOrElse(expr, 0)+w)
+    }
+    m.toArray.unzip
   }
 
   private def updateWeightedSum(ixw: (IntExpression, Int)): Array[(IntExpression, Int)] = {

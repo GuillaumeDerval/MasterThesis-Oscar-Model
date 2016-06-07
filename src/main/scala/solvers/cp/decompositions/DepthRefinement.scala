@@ -8,9 +8,8 @@ import vars.IntVar
 
 /**
   * A decomposition strategy based on refinement and depth of the subproblem in the tree
-  * @param allVars important variables that will be taken into account to compute the cartesian product log
   * @param search search to be used
   */
-class DepthRefinement(allVars: List[IntVar], search: BranchingInstantiator) extends RefinementStrategy[Int](search) {
+class DepthRefinement(search: BranchingInstantiator) extends RefinementStrategy[Int](search)(scala.math.Ordering.Int.reverse) {
   override def generate(assignment: List[Constraint], path: List[Int]): Int = path.length
 }

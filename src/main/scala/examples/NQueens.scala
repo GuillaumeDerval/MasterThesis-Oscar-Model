@@ -1,10 +1,12 @@
 package examples
 
 import constraints.AllDifferent
+import models.UninstantiatedModel
 import solvers.cp.branchings.Branching
-import solvers.cp.decompositions.CartProdRefinement
+import solvers.cp.decompositions.{CartProdRefinement, DecompositionAddCartProdInfo, DepthIterativeDeepening, DepthRefinement}
 import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
+import visualisation.ConstraintsVisualisation
 
 object NQueens extends DistributedCPApp[Unit] with App {
   override lazy val config = new DistributedCPAppConfig {
@@ -24,7 +26,8 @@ object NQueens extends DistributedCPApp[Unit] with App {
   setSearch(Branching.binaryFirstFail(queens))
   onSolution {}
 
-  setDecompositionStrategy(new CartProdRefinement(queens, Branching.naryStatic(queens)))
+  setDecompositionStrategy(new CartProdRefinement(queens, Branching.binaryFirstFail(queens)))
+  //setDecompositionStrategy(new DecompositionAddCartProdInfo(new DepthIterativeDeepening(Branching.naryStatic(queens)), queens))
   val (stats, solutions) = solve()
   println(stats)
 }

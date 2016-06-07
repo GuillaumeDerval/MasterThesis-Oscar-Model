@@ -405,7 +405,6 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
         master ! SolutionMessage(on_solution(), Some(v.max))
-
       }
     case _ => (a) =>
       if(forceImmediateSend)
@@ -421,6 +420,7 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     case null => modelDeclaration.getSearch(cpmodel)
     case _ => new IntBoundaryUpdateSearchWrapper(modelDeclaration.getSearch(cpmodel), this, cpmodel.cpObjective)
   }
+  //val search: Branching = modelDeclaration.getSearch(cpmodel)
   //val search: oscar.algo.search.Branching = getSearch(cpmodel)
 
   /**
@@ -431,7 +431,14 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     case StartMessage() => master ! AwaitingSPMessage()
     case DoSubproblemMessage(spid: Int, sp: List[Constraint]) =>
       Future {
-        solve_subproblem(spid, sp)
+        println("start")
+        try{
+          solve_subproblem(spid, sp)
+        }
+        catch {
+          case a: Throwable => log.info("WTF ")
+            a.printStackTrace()
+        }
       }
     case BoundUpdateMessage(newBound: Int) =>
       this.update_boundary(newBound)

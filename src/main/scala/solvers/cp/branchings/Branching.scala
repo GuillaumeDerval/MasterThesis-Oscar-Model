@@ -6,7 +6,10 @@ import vars.IntVar
 abstract class Branching extends oscar.algo.search.Branching
 
 object Branching {
+  //def apply(b: => Seq[Alternative]): BranchingInstantiator = (cp) => new Branching { override def alternatives = b }
   def apply(b: => Seq[Alternative]): BranchingInstantiator = (cp) => new Branching { override def alternatives = b }
+  def fromAlternatives(b: () => Seq[Alternative]): BranchingInstantiator = (cp) => new Branching { override def alternatives = b() }
+  def fromAlternatives(b: CPModel => Seq[Alternative]): BranchingInstantiator = (cp) => new Branching { override def alternatives = b(cp) }
 
   type Alternative = Function0[Unit]
 

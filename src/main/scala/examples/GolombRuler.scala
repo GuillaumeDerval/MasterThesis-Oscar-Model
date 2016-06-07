@@ -2,7 +2,7 @@ package examples
 
 import constraints.AllDifferent
 import solvers.cp.branchings.Branching
-import solvers.cp.decompositions.CartProdRefinement
+import solvers.cp.decompositions.{CartProdRefinement, DecompositionAddCartProdInfo, DepthIterativeDeepening}
 import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
 
@@ -66,8 +66,9 @@ object GolombRuler extends DistributedCPApp[String] with App {
 
   //apply(SimplifySum)
 
-  setDecompositionStrategy(new CartProdRefinement(m, Branching.naryStatic(m)))
+  setDecompositionStrategy(new CartProdRefinement(m, Branching.binaryStatic(m)))
+  //setDecompositionStrategy(new DecompositionAddCartProdInfo(new DepthIterativeDeepening(Branching.naryStatic(m)), m))
   val (stats, solutions) = solve()
   println(stats)
-  println(solutions.last)
+  //println(solutions.last)
 }

@@ -65,6 +65,7 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
       case AllDifferent(array) => cpSolver.post(cp.modeling.constraint.allDifferent(array.map(postIntExpressionAndGetVar)), CPPropagStrength.Weak) != CPOutcome.Failure
       case Table(array, values) => cpSolver.post(cp.modeling.constraint.table(array.map(postIntExpressionAndGetVar), values)) != CPOutcome.Failure
       case MinCircuit(succ, distMatrixSucc, cost) => cpSolver.post(cp.modeling.constraint.minCircuit(succ.map(postIntExpressionAndGetVar), distMatrixSucc, postIntExpressionAndGetVar(cost)), CPPropagStrength.Strong) != CPOutcome.Failure
+      case MinCircuitWeak(succ, distMatrixSucc, cost) => cpSolver.post(cp.modeling.constraint.minCircuit(succ.map(postIntExpressionAndGetVar), distMatrixSucc, postIntExpressionAndGetVar(cost)), CPPropagStrength.Weak) != CPOutcome.Failure
       case GCC(x, minVal, low, up) => cpSolver.post(new oscar.cp.constraints.GCC(x.map(postIntExpressionAndGetVar), minVal, low, up)) != CPOutcome.Failure
       case BinPacking(x, w, l) => cpSolver.post(new cp.constraints.BinPacking(x.map(postIntExpressionAndGetVar), w, l.map(postIntExpressionAndGetVar))) != CPOutcome.Failure
       case Circuit(succ, symmetric) => cpSolver.post(new cp.constraints.Circuit(succ.map(postIntExpressionAndGetVar), symmetric), CPPropagStrength.Strong) != CPOutcome.Failure
@@ -179,6 +180,18 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
         val vx: Array[oscar.cp.CPIntVar] = x.map(postIntExpressionAndGetVar)
         val vy: oscar.cp.CPIntVar = postIntExpressionAndGetVar(y)
         vx(vy)
+      /*case Element2D(x, y, z) =>
+        val vx: Array[Array[oscar.cp.CPIntVar]] = x.map(_.map(postIntExpressionAndGetVar))
+        val vy: oscar.cp.CPIntVar = postIntExpressionAndGetVar(y)
+        val vz: oscar.cp.CPIntVar = postIntExpressionAndGetVar(z)
+        vx(vy)(vz)*/
+      case ElementCst(x, y) =>
+        val vy: oscar.cp.CPIntVar = postIntExpressionAndGetVar(y)
+        x(vy)
+      case ElementCst2D(x, y, z) =>
+        val vy: oscar.cp.CPIntVar = postIntExpressionAndGetVar(y)
+        val vz: oscar.cp.CPIntVar = postIntExpressionAndGetVar(z)
+        x(vy)(vz)
       case Max(x) =>
         val vx = x.map(postIntExpressionAndGetVar)
         val m = oscar.cp.CPIntVar(vx.map(_.min).max, vx.map(_.max).max)
