@@ -24,6 +24,11 @@ class SubproblemData(val cartesianProductLog: Double, val minBound: Int, val dis
   def this(cartesianProductLog: Double, minBound: Int) = this(cartesianProductLog, minBound, -1)
 }
 
+/**
+  * A subpoblem
+  * @param constraints
+  * @param additionalData
+  */
 class SubProblem(val constraints: List[Constraint], additionalData: Map[SubProblemAdditionalData[Any], Any]) {
   def this(constraints: List[Constraint]) = this(constraints, Map())
   def getData[B](what: SubProblemAdditionalData[B]): Option[B] = additionalData.get(what).map(_.asInstanceOf[B])

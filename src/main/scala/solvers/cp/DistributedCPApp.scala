@@ -109,9 +109,3 @@ abstract class DistributedCPApp[RetVal](md: ModelDeclaration with DecomposedCPSo
     }
   }
 }
-
-object Test extends DistributedCPApp() {
-  override lazy val config = new DistributedCPAppConfig {
-    //val size = opt[String](name="size", required = true)
-  }
-}

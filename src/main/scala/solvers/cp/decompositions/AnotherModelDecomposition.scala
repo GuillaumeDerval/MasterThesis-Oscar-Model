@@ -3,7 +3,9 @@ import models.UninstantiatedModel
 import solvers.cp.SubProblem
 
 /**
-  * Created by dervalguillaume on 7/06/16.
+  * Decompose using another model
+  * @param model
+  * @param decomp
   */
 class AnotherModelDecomposition(model: UninstantiatedModel, decomp: DecompositionStrategy) extends DecompositionStrategy{
   /**

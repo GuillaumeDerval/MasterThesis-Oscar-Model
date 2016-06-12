@@ -11,6 +11,10 @@ import vars.IntVar
 import scala.spores._
 import scala.io.Source
 
+/**
+  * Example of ATSP, copied from the original one from OscaR-lib.
+  * GNU GPL, OscaR Authors
+  */
 object ATSP extends DistributedCPApp[Int] with App {
   var lines = Source.fromFile("ftv70.atsp").getLines.toArray
   lines = lines.take(lines.size-1) // drop EOF

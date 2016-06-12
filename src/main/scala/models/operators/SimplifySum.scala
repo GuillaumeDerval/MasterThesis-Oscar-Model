@@ -6,7 +6,9 @@ import models.UninstantiatedModel
 
 import scala.collection.mutable
 
-
+/**
+  * Simplify sums, using weightedsums notably.
+  */
 object SimplifySum extends ModelOperator[UninstantiatedModel] {
   def apply(model: UninstantiatedModel): UninstantiatedModel = {
     val newConstraints = model.constraints.map {

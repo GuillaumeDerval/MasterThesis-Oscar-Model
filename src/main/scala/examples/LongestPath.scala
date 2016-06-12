@@ -12,7 +12,8 @@ import scala.io.Source
 import scala.spores._
 
 /**
-  * Created by dervalguillaume on 6/06/16.
+  * Example of LonguestPath, copied from the original one from OscaR-lib.
+  * GNU GPL, OscaR Authors
   */
 object LongestPath extends DistributedCPApp[Int] with App {
 

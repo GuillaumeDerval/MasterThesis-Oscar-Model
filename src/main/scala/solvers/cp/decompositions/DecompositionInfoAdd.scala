@@ -5,6 +5,10 @@ import models.{MemoCPModel, UninstantiatedModel}
 import solvers.cp.{SubProblem, SubProblemCartesianProductLog}
 import vars.IntVar
 
+/**
+  * Decomposition that uses another decomposition, but add infos to subproblems.
+  * @param baseDecomposition
+  */
 abstract class DecompositionInfoAdd(baseDecomposition: DecompositionStrategy) extends DecompositionStrategy {
   /**
     * Decompose the problem

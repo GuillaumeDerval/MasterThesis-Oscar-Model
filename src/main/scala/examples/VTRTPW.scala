@@ -10,6 +10,11 @@ import vars.IntVar
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
 
+
+/**
+  * Example of VRTPW, copied from the original one from OscaR-lib.
+  * GNU GPL, OscaR Authors
+  */
 object VTRTPW extends DistributedCPApp[Int] {
   override lazy val config = new DistributedCPAppConfig {
     val file = trailArg[String](descr = "Path to the VRTPW instance")

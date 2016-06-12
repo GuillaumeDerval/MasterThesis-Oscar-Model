@@ -8,6 +8,10 @@ import solvers.cp.{DistributedCPApp, DistributedCPAppConfig}
 import vars.IntVar
 import visualisation.ConstraintsVisualisation
 
+/**
+  * Example of nQueens, copied from the original one from OscaR-lib.
+  * GNU GPL, OscaR Authors
+  */
 object NQueens extends DistributedCPApp[Unit] with App {
   override lazy val config = new DistributedCPAppConfig {
     val size = trailArg[Int](descr = "Size of the golomb ruler")

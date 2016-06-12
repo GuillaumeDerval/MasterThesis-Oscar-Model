@@ -216,6 +216,9 @@ class SimpleRemoteSolverSystem(hostname: String, port: Int, registerDir: Option[
   Await.result(system.whenTerminated, Duration.Inf)
 }
 
+/**
+  * Stores the default Akka config
+  */
 private object AkkaConfigCreator {
   def remote(hostname: String, port: Int): Config = {
     ConfigFactory.parseString(s"""
@@ -393,18 +396,22 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
   val on_solution: () => RetVal = modelDeclaration.onSolution
   val foundSolutions: ListBuffer[RetVal] = ListBuffer()
 
+  //var lastSolution: SolutionMessage[RetVal] = null
+
   val solution: Model => Unit = cpmodel.optimisationMethod match {
     case m: Minimisation =>
       (a) => {
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
         master ! SolutionMessage(on_solution(), Some(v.max))
+        //lastSolution = SolutionMessage(on_solution(), Some(v.max))
       }
     case m: Maximisation =>
       (a) => {
         val v = cpmodel.getRepresentative(objv)
         this.update_boundary(v.max)
         master ! SolutionMessage(on_solution(), Some(v.max))
+        //lastSolution = SolutionMessage(on_solution(), Some(v.max))
       }
     case _ => (a) =>
       if(forceImmediateSend)
@@ -483,6 +490,10 @@ class SolverActor[RetVal](modelDeclaration: ModelDeclaration with DecomposedCPSo
     }
     cpmodel.cpSolver.searchEngine.clearOnSolution()
     val t1 = getThreadCpuTime
+    //if(null != lastSolution){
+    //  master ! lastSolution
+    //  lastSolution = null
+    //}
     master ! DoneMessage(spid, t1 - t0, new SPSearchStatistics(info))
   }
 

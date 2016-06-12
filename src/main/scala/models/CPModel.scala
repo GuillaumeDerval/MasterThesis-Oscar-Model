@@ -12,7 +12,8 @@ import vars.domainstorage.int.{AdaptableIntDomainStorage, IntervalDomainStorage,
 import vars.{BoolVar, IntVar}
 
 /**
-  * Created by dervalguillaume on 12/04/16.
+  * Model associated with a CP Solver
+  * @param p
   */
 class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
   implicit lazy val cpSolver = new oscar.cp.CPSolver()
@@ -72,6 +73,7 @@ class CPModel(p: UninstantiatedModel) extends InstantiatedModel(p){
       case Inverse(a, b) => cpSolver.post(new cp.constraints.Inverse(a.map(postIntExpressionAndGetVar), b.map(postIntExpressionAndGetVar))) != CPOutcome.Failure
       case MinAssignment(xarg, weightsarg, cost) => cpSolver.post(new cp.constraints.MinAssignment(xarg.map(postIntExpressionAndGetVar), weightsarg, postIntExpressionAndGetVar(cost))) != CPOutcome.Failure
       case StrongEq(a, b) => cpSolver.post(postIntExpressionAndGetVar(a) == postIntExpressionAndGetVar(b), CPPropagStrength.Strong) != CPOutcome.Failure
+      case Spread(a, s1, s2) => cpSolver.post(new cp.constraints.Spread(a.toArray.map(postIntExpressionAndGetVar), s1, postIntExpressionAndGetVar(s2), true))  != CPOutcome.Failure
       case default => throw new Exception() //TODO: put a real exception here
     }
   }

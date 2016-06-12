@@ -14,6 +14,10 @@ import scala.collection.mutable.ListBuffer
 import scala.spores.NullarySpore
 import misc.TimeHelper.getClockTime
 
+/**
+  * A trait for object that would want to watch parallel solving
+  * @tparam RetVal
+  */
 trait Watcher[RetVal] {
   /**
     * Called when a subproblem just started
@@ -52,6 +56,9 @@ trait Watcher[RetVal] {
   def allDone(): Unit
 }
 
+/**
+  * Message
+  */
 trait SolvingMessage
 trait MasterToSolverMessage extends SolvingMessage
 trait SolverToMasterMessage extends SolvingMessage
@@ -73,6 +80,12 @@ case class AllDoneMessage() extends MasterToSolverMessage with WatcherMessage
 case class HelloMessage() extends MasterToSolverMessage with SolverToMasterMessage
 case class StartMessage() extends MasterToSolverMessage
 
+/**
+  * Class that runs watchers, and send them the info from the output queue
+  * @param watchers
+  * @param outputQueue
+  * @tparam RetVal
+  */
 class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
                               outputQueue: LinkedBlockingQueue[SolvingMessage]) extends Runnable {
   override def run(): Unit = {
@@ -91,6 +104,10 @@ class WatcherRunnable[RetVal](watchers: Iterable[Watcher[RetVal]],
   }
 }
 
+/**
+  * Statistics generation
+  * @tparam RetVal
+  */
 class StatisticsWatcher[RetVal] extends Watcher[RetVal] {
   var currentStatistics = new SearchStatistics(0, 0, 0, false, 0, 0, 0, 0)
   val results = ListBuffer[RetVal]()

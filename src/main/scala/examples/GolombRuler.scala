@@ -8,6 +8,10 @@ import vars.IntVar
 
 import scala.spores._
 
+/**
+  * Example of ATSP, copied from the original one from OscaR-lib.
+  * GNU GPL, OscaR Authors
+  */
 object GolombRuler extends DistributedCPApp[String] with App {
   override lazy val config = new DistributedCPAppConfig {
     val size = trailArg[Int](descr = "Size of the golomb ruler")

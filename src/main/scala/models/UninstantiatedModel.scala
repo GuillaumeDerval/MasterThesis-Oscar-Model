@@ -6,7 +6,13 @@ import vars.IntVar
 import vars.domainstorage.int.IntDomainStorage
 
 
-
+/**
+  * Uninstanciated model
+  * @param declaration Model declarator
+  * @param constraints The constraints applied to this model
+  * @param intRepresentatives the variables id and the domains associated
+  * @param optimisationMethod the eventual optimization method
+  */
 case class UninstantiatedModel(declaration: ModelDeclaration,
                                constraints: List[Constraint],
                                intRepresentatives: ModelVarStorage[IntVar, IntDomainStorage],

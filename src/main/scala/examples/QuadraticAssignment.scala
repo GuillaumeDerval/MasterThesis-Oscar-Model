@@ -5,12 +5,17 @@ import constraints.AllDifferent
 import models.CPModel
 import solvers.cp.DistributedCPApp
 import vars.IntVar
-import oscar.util.selectMin
+import oscar.util._
 import solvers.cp.branchings.Branching
 import solvers.cp.decompositions.CartProdRefinement
 
 import scala.io.Source
 import scala.spores._
+
+/**
+  * Example of QAP, copied from the original one from OscaR-lib.
+  * GNU GPL, OscaR Authors
+  */
 
 object QuadraticAssignment extends DistributedCPApp[Int] with App {
 
@@ -51,12 +56,13 @@ object QuadraticAssignment extends DistributedCPApp[Int] with App {
   val search = Branching.fromAlternatives(spore{
         val _x = x
         (cp: CPModel) => {
-          selectMin(_x)(y => !y.isBound)(y => y.size) match {
-            case None => Branching.noAlternative
-            case Some(y) => {
-              val v = y.min
-              Branching.branch(cp.post(y == v))(cp.post(y != v))
-            }
+          val z = _x.filter(y => !y.isBound)
+          if(z.isEmpty)
+            Branching.noAlternative
+          else {
+            val vari = selectMinDeterministic(z)(y => y.size)
+            val valu = vari.min
+            Branching.branch(cp.post(vari == valu))(cp.post(vari != valu))
           }
         }
     }

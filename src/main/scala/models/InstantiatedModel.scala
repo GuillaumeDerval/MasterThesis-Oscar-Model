@@ -26,6 +26,10 @@ trait LeafModel extends Model {
   def += (constraint: Constraint): Boolean = post(constraint)
 }
 
+/**
+  * Abstract class for all Instantiated Models
+  * @param p: the model from which to inherit
+  */
 abstract class InstantiatedModel(p: UninstantiatedModel) extends LeafModel {
   override val declaration: ModelDeclaration = p.declaration
   override val intRepresentatives: ModelVarStorage[IntVar, IntVarImplementation] = ModelVarStorage[IntVar, IntVarImplementation, IntDomainStorage](p.intRepresentatives, instantiateDomainStorage)
